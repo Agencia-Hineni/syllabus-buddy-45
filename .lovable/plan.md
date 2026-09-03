@@ -42,13 +42,15 @@ Desde o início a estrutura tem os níveis: **Instituição → Curso → Turma 
 
 ## Detalhes técnicos
 
-- **Backend**: Lovable Cloud (banco, autenticação, arquivos). Login por e-mail/senha + Google.
+- **Portabilidade (sem lock-in)**: o backend roda no Lovable Cloud, mas por baixo é **Postgres puro**. Todo o esquema nasce em arquivos de migration SQL versionados no repositório, sem recurso proprietário. Autenticação usa Supabase Auth (padrão aberto, JWT) e as regras de acesso são RLS do próprio Postgres. Resultado: um `pg_dump` + as migrations rodam em qualquer Postgres (Neon, RDS, VPS) e o front continua funcionando trocando as variáveis de ambiente.
+- **Camadas isoladas**: acesso a dados, pagamentos e envio de e-mail ficam cada um atrás de uma interface própria (`db`, `payments`, `mailer`). Trocar provedor de pagamento, de e-mail ou de banco é substituir a implementação daquela camada.
 - **Papéis**: tabela separada de papéis por turma (`aluno`, `lider`, `vice_lider`) e papel global `admin`, verificados no servidor via função de segurança — nunca no navegador. RLS em todas as tabelas: aluno só lê a própria turma; escrita de disciplinas/atividades restrita a líder/vice/admin.
-- **Tabelas principais**: `institutions`, `courses`, `classes`, `class_members`, `subjects`, `assignments`, `assignment_completions`, `subscriptions`, `payments`, `notification_preferences`, `notification_log`, `audit_log`. Toda tabela nova recebe os GRANTs correspondentes.
+- **Tabelas principais**: `institutions`, `courses`, `classes`, `class_members`, `subjects`, `assignments`, `assignment_completions`, `subscriptions`, `payments`, `payment_webhook_events`, `notification_preferences`, `notification_log`, `audit_log`. Toda tabela nova recebe os GRANTs correspondentes.
 - **Bloqueio**: status calculado a partir de `subscriptions.current_period_end` + carência, aplicado tanto na interface quanto nas próprias políticas de leitura, para não ser contornável.
-- **Pagamentos**: integração nativa de pagamentos do Lovable para o cartão (assinatura recorrente + webhook que atualiza o status); fluxo Pix com upload de comprovante e confirmação manual no painel.
-- **E-mails**: sistema de e-mails do Lovable com templates React Email (lembrete de prazo, resumo semanal, boas-vindas, aviso de vencimento). Disparo agendado por job diário que busca prazos na janela e envia um e-mail por aluno, com registro para não duplicar. Requer configurar um domínio de envio — te guio nesse passo.
+- **Pix automático**: rota pública `/api/public/webhooks/pagamentos` recebe a notificação do provedor, valida a assinatura/segredo, consulta o pagamento na API oficial para confirmar valor e status, grava em `payments` de forma idempotente (evento único por ID) e estende `current_period_end`. Chave de API do provedor guardada como secret, nunca no código.
+- **E-mails**: sistema de e-mails do Lovable com templates React Email (lembrete de prazo, resumo semanal, boas-vindas, aviso de vencimento). Disparo por job diário que busca prazos na janela e envia um e-mail por aluno, com registro para não duplicar. Requer configurar um domínio de envio — te guio nesse passo.
 - **Rotas**: `/` (marketing + login), `/painel`, `/disciplinas`, `/disciplinas/$id`, `/agenda`, `/gestao` (líderes), `/admin` (você), `/assinatura`, todas com metadados próprios.
+
 
 ## Ordem de construção
 
