@@ -83,16 +83,32 @@ export const completionsQuery = () => ({
   },
 });
 
+export type MemberWithProfile = ClassMember & {
+  profile: Pick<Profile, "id" | "full_name" | "email"> | null;
+  subscription: Subscription | null;
+};
+
 export const membersQuery = (classId: string | undefined) => ({
   queryKey: ["members", classId],
   enabled: Boolean(classId),
-  queryFn: async () =>
-    unwrap(
-      await supabase
-        .from("class_members")
-        .select("*, profiles:user_id(id, full_name, email)")
-        .eq("class_id", classId!),
-    ) as (ClassMember & { profiles: Pick<Profile, "id" | "full_name" | "email"> | null })[],
+  queryFn: async (): Promise<MemberWithProfile[]> => {
+    const members = unwrap(
+      await supabase.from("class_members").select("*").eq("class_id", classId!).order("joined_at"),
+    );
+    const ids = members.map((m) => m.user_id);
+    if (ids.length === 0) return [];
+    const profiles = unwrap(
+      await supabase.from("profiles").select("id, full_name, email").in("id", ids),
+    );
+    const subs = unwrap(
+      await supabase.from("subscriptions").select("*").eq("class_id", classId!).in("user_id", ids),
+    );
+    return members.map((m) => ({
+      ...m,
+      profile: profiles.find((p) => p.id === m.user_id) ?? null,
+      subscription: subs.find((s) => s.user_id === m.user_id) ?? null,
+    }));
+  },
 });
 
 export const subscriptionQuery = () => ({
