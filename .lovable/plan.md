@@ -24,16 +24,13 @@ Um site onde os alunos veem as disciplinas, as atividades e provas com prazos, r
 ## Assinatura, Pix automático e bloqueio
 
 - Assinatura mensal por aluno, com dois caminhos, **ambos com baixa automática**:
-  - **Cartão de crédito** — cobrança recorrente automática.
-  - **Pix** — o app gera um QR Code / copia-e-cola exclusivo daquele aluno naquele mês. Quando o aluno paga, o provedor avisa o sistema em segundos por webhook e a assinatura é liberada sozinha, sem comprovante e sem confirmação manual. A confirmação manual fica só como plano B, no painel do admin.
-- **Escolha do provedor (custo/benefício)** — comparação rápida para você decidir antes de construir:
-  - **Mercado Pago**: Pix com taxa percentual baixa e cartão recorrente na mesma conta; cadastro rápido, aceita CPF, API muito documentada. Percentual pesa pouco em mensalidade pequena.
-  - **Asaas**: pensado para mensalidade recorrente; cobra **valor fixo por Pix recebido**, o que fica caro proporcionalmente se a mensalidade for baixa, mas traz régua de inadimplência e lembrete de cobrança prontos.
-  - **Efí (Gerencianet)**: a menor taxa de Pix das três, porém exige conta PJ e certificado digital na integração — mais burocracia no começo.
-  - **Recomendação**: começar com **Mercado Pago** (Pix + cartão no mesmo lugar, sem PJ obrigatória) e, se o volume crescer, migrar o Pix para a Efí. O código de pagamento fica isolado atrás de uma camada única, então trocar de provedor depois é mexer em um arquivo, não no app inteiro.
+  - **Cartão de crédito** — cobrança recorrente automática via Lovable Stripe.
+  - **Pix** — integrado com a **Efí/Gerencianet da sua agência**: cada aluno tem um QR Code/copia-e-cola do próximo mês, o webhook da Efí confirma o pagamento em segundos e libera o acesso sozinho.
+- **Por que Efí para Pix**: menor taxa de Pix no Brasil (geralmente 0,99% ou valor fixo pequeno, dependendo do contrato da agência) e você já está dentro da agência. O código de pagamentos fica isolado, então dá para trocar o provedor futuramente sem mexer no resto do app.
 - **Regra de bloqueio**: passado o vencimento e a carência (ex.: 5 dias, configurável), a conta entra em modo bloqueado — o aluno entra e vê só a tela de pagamento. Ao cair o Pix ou a cobrança do cartão, o acesso volta na hora.
 - Aviso automático por e-mail 3 dias antes do vencimento, no dia, e no bloqueio.
 - Painel do administrador com: ativo, pendente, bloqueado, recebido no mês e histórico de pagamentos.
+
 
 
 ## Preparado para escalar
