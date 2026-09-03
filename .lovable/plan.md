@@ -51,11 +51,11 @@ Desde o início a estrutura tem os níveis: **Instituição → Curso → Turma 
 - **E-mails**: sistema de e-mails do Lovable com templates React Email (lembrete de prazo, resumo semanal, boas-vindas, aviso de vencimento). Disparo por job diário que busca prazos na janela e envia um e-mail por aluno, com registro para não duplicar. Requer configurar um domínio de envio — te guio nesse passo.
 - **Rotas**: `/` (marketing + login), `/painel`, `/disciplinas`, `/disciplinas/$id`, `/agenda`, `/gestao` (líderes), `/admin` (você), `/assinatura`, todas com metadados próprios.
 
-
 ## Ordem de construção
 
-1. Cloud + autenticação (e-mail e Google) + modelo de dados completo com RLS e a turma de Farmácia semeada.
+1. Banco + autenticação (e-mail e Google), migrations versionadas, RLS e a turma de Farmácia semeada.
 2. Área do aluno: painel, disciplinas, atividades, calendário, marcar como feito.
 3. Área de gestão para líder/vice + administração geral.
-4. Assinatura: cartão recorrente, fluxo Pix com confirmação, bloqueio por inadimplência.
+4. Assinatura: definição do provedor, Pix com QR Code e baixa automática por webhook, cartão recorrente, bloqueio por inadimplência.
 5. E-mails: domínio, templates e disparo automático dos lembretes.
+
