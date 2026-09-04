@@ -28,7 +28,10 @@ export const generatePixCharge = createServerFn({ method: "POST" })
       description: data.description,
     });
 
-    const { error: paymentError } = await supabase.from("payments").insert({
+    // Writes to payments are server-only (no client INSERT policy).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error: paymentError } = await supabaseAdmin.from("payments").insert({
       user_id: userId,
       class_id: subscription.class_id,
       subscription_id: subscription.id,
