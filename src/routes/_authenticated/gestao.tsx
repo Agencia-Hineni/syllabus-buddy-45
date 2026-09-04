@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -38,30 +38,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState } from "@/components/EmptyState";
-import { formatDate, typeLabel } from "@/lib/format";
-import { generateInviteCode } from "@/lib/utils";
+import { formatDate, formatMoney, typeLabel } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/gestao")({
   head: () => ({
     meta: [
       { title: "Gestão da turma | Agenda Acadêmica" },
-      {
-        name: "description",
-        content: "Líderes e vice-líderes cadastram disciplinas, atividades e provas da turma.",
-      },
+      { name: "description", content: "Líderes e vice-líderes cadastram disciplinas, atividades e provas da turma." },
       { property: "og:title", content: "Gestão da turma | Agenda Acadêmica" },
-      {
-        property: "og:description",
-        content: "Líderes e vice-líderes cadastram disciplinas, atividades e provas da turma.",
-      },
+      { property: "og:description", content: "Líderes e vice-líderes cadastram disciplinas, atividades e provas da turma." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -79,84 +66,12 @@ function Gestao() {
   const { data: subjects } = useQuery(subjectsQuery(classId));
   const { data: assignments } = useQuery(assignmentsQuery(classId));
   const { data: members } = useQuery(membersQuery(classId));
-  const { data: auditLog } = useQuery({
-    queryKey: ["audit-log", classId],
-    enabled: Boolean(classId),
-    queryFn: async () => {
-      const res = await supabase
-        .from("audit_log")
-        .select("id, summary, action, entity_type, created_at, actor_id")
-        .eq("class_id", classId!)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (res.error) throw new Error(res.error.message);
-      return res.data;
-    },
-  });
 
-  const canManage =
-    Boolean(classId) &&
-    (isAdmin || membership?.role === "lider" || membership?.role === "vice_lider");
-
-  const regenerateInvite = useMutation({
-    mutationFn: async () => {
-      if (!classId) throw new Error("Sem turma");
-      const code = generateInviteCode();
-      const { error } = await supabase
-        .from("classes")
-        .update({ invite_code: code })
-        .eq("id", classId);
-      if (error) throw new Error(error.message);
-      await logAudit({
-        classId,
-        entityType: "class",
-        entityId: classId,
-        action: "update",
-        summary: "Gerou um novo código de convite",
-      });
-      return code;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["membership"] });
-      toast.success("Novo código de convite gerado");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const setMemberStatus = useMutation({
-    mutationFn: async ({
-      memberId,
-      status,
-      name,
-    }: {
-      memberId: string;
-      status: "ativo" | "removido";
-      name: string;
-    }) => {
-      const { error } = await supabase.from("class_members").update({ status }).eq("id", memberId);
-      if (error) throw new Error(error.message);
-      await logAudit({
-        classId: classId ?? null,
-        entityType: "class_member",
-        entityId: memberId,
-        action: "update",
-        summary: status === "ativo" ? `Reativou ${name} na turma` : `Removeu ${name} da turma`,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast.success("Membro atualizado");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const canManage = isAdmin || membership?.role === "lider" || membership?.role === "vice_lider";
 
   const [subjectDialog, setSubjectDialog] = useState<Partial<Subject> | null>(null);
   const [assignmentDialog, setAssignmentDialog] = useState<Partial<Assignment> | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{
-    kind: "subject" | "assignment";
-    id: string;
-    title: string;
-  } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ kind: "subject" | "assignment"; id: string; title: string } | null>(null);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["subjects"] });
@@ -176,22 +91,11 @@ function Gestao() {
       if (values.id) {
         const { error } = await supabase.from("subjects").update(payload).eq("id", values.id);
         if (error) throw new Error(error.message);
-        await logAudit({
-          classId,
-          entityType: "subject",
-          entityId: values.id,
-          action: "update",
-          summary: `Editou a disciplina ${payload.name}`,
-        });
+        await logAudit({ classId, entityType: "subject", entityId: values.id, action: "update", summary: `Editou a disciplina ${payload.name}` });
       } else {
         const { error } = await supabase.from("subjects").insert(payload);
         if (error) throw new Error(error.message);
-        await logAudit({
-          classId,
-          entityType: "subject",
-          action: "create",
-          summary: `Criou a disciplina ${payload.name}`,
-        });
+        await logAudit({ classId, entityType: "subject", action: "create", summary: `Criou a disciplina ${payload.name}` });
       }
     },
     onSuccess: () => {
@@ -218,22 +122,11 @@ function Gestao() {
       if (values.id) {
         const { error } = await supabase.from("assignments").update(payload).eq("id", values.id);
         if (error) throw new Error(error.message);
-        await logAudit({
-          classId,
-          entityType: "assignment",
-          entityId: values.id,
-          action: "update",
-          summary: `Editou "${payload.title}"`,
-        });
+        await logAudit({ classId, entityType: "assignment", entityId: values.id, action: "update", summary: `Editou "${payload.title}"` });
       } else {
         const { error } = await supabase.from("assignments").insert(payload);
         if (error) throw new Error(error.message);
-        await logAudit({
-          classId,
-          entityType: "assignment",
-          action: "create",
-          summary: `Criou "${payload.title}"`,
-        });
+        await logAudit({ classId, entityType: "assignment", action: "create", summary: `Criou "${payload.title}"` });
       }
     },
     onSuccess: () => {
@@ -245,25 +138,11 @@ function Gestao() {
   });
 
   const remove = useMutation({
-    mutationFn: async ({
-      kind,
-      id,
-      title,
-    }: {
-      kind: "subject" | "assignment";
-      id: string;
-      title: string;
-    }) => {
+    mutationFn: async ({ kind, id, title }: { kind: "subject" | "assignment"; id: string; title: string }) => {
       const table = kind === "subject" ? "subjects" : "assignments";
       const { error } = await supabase.from(table).delete().eq("id", id);
       if (error) throw new Error(error.message);
-      await logAudit({
-        classId: classId ?? null,
-        entityType: kind,
-        entityId: id,
-        action: "delete",
-        summary: `Excluiu "${title}"`,
-      });
+      await logAudit({ classId: classId ?? null, entityType: kind, entityId: id, action: "delete", summary: `Excluiu "${title}"` });
     },
     onSuccess: () => {
       invalidate();
@@ -277,35 +156,19 @@ function Gestao() {
     return (
       <EmptyState
         title="Acesso restrito"
-        description={
-          classId
-            ? "Apenas líder, vice-líder e administrador podem gerenciar a turma."
-            : "Você precisa estar em uma turma para gerenciá-la."
-        }
+        description="Apenas líder, vice-líder e administrador podem gerenciar a turma."
       />
     );
   }
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl">Gestão da turma</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {membership?.classes?.name} · código de convite:{" "}
-            <code className="rounded bg-secondary px-1.5 py-0.5">
-              {membership?.classes?.invite_code}
-            </code>
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => regenerateInvite.mutate()}
-          disabled={regenerateInvite.isPending}
-        >
-          <RefreshCw className="mr-2 size-4" /> Gerar novo código
-        </Button>
+      <header>
+        <h1 className="text-2xl md:text-3xl">Gestão da turma</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {membership?.classes?.name} · código de convite:{" "}
+          <code className="rounded bg-secondary px-1.5 py-0.5">{membership?.classes?.invite_code}</code>
+        </p>
       </header>
 
       <Tabs defaultValue="atividades">
@@ -313,33 +176,21 @@ function Gestao() {
           <TabsTrigger value="atividades">Atividades</TabsTrigger>
           <TabsTrigger value="disciplinas">Disciplinas</TabsTrigger>
           <TabsTrigger value="membros">Membros</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atividades" className="space-y-4">
-          <Button
-            onClick={() => setAssignmentDialog({ type: "atividade" })}
-            disabled={!subjects?.length}
-          >
+          <Button onClick={() => setAssignmentDialog({ type: "atividade" })} disabled={!subjects?.length}>
             <Plus className="mr-2 size-4" /> Nova atividade
           </Button>
           {!subjects?.length && (
-            <p className="text-sm text-muted-foreground">
-              Cadastre uma disciplina antes de criar atividades.
-            </p>
+            <p className="text-sm text-muted-foreground">Cadastre uma disciplina antes de criar atividades.</p>
           )}
           {(assignments ?? []).length === 0 ? (
-            <EmptyState
-              title="Nenhuma atividade"
-              description="Crie a primeira atividade ou prova da turma."
-            />
+            <EmptyState title="Nenhuma atividade" description="Crie a primeira atividade ou prova da turma." />
           ) : (
             <ul className="space-y-2">
               {(assignments ?? []).map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4"
-                >
+                <li key={a.id} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{a.title}</p>
                     <p className="text-xs text-muted-foreground">
@@ -347,21 +198,14 @@ function Gestao() {
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Editar"
-                      onClick={() => setAssignmentDialog(a)}
-                    >
+                    <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => setAssignmentDialog(a)}>
                       <Pencil className="size-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       aria-label="Excluir"
-                      onClick={() =>
-                        setConfirmDelete({ kind: "assignment", id: a.id, title: a.title })
-                      }
+                      onClick={() => setConfirmDelete({ kind: "assignment", id: a.id, title: a.title })}
                     >
                       <Trash2 className="size-4 text-destructive" />
                     </Button>
@@ -378,15 +222,9 @@ function Gestao() {
           </Button>
           <ul className="space-y-2">
             {(subjects ?? []).map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4"
-              >
+              <li key={s.id} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span
-                    className="size-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: s.color }}
-                  />
+                  <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
                   <div className="min-w-0">
                     <p className="truncate font-medium">{s.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -395,12 +233,7 @@ function Gestao() {
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Editar"
-                    onClick={() => setSubjectDialog(s)}
-                  >
+                  <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => setSubjectDialog(s)}>
                     <Pencil className="size-4" />
                   </Button>
                   <Button
@@ -419,83 +252,21 @@ function Gestao() {
 
         <TabsContent value="membros">
           {!members?.length ? (
-            <EmptyState
-              title="Ninguém entrou ainda"
-              description="Compartilhe o código de convite com a turma."
-            />
+            <EmptyState title="Ninguém entrou ainda" description="Compartilhe o código de convite com a turma." />
           ) : (
             <ul className="space-y-2">
               {members.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4 text-sm"
-                >
+                <li key={m.id} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4 text-sm">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">
-                      {m.profile?.full_name ?? m.profile?.email ?? "Aluno"}
-                    </p>
+                    <p className="truncate font-medium">{m.profile?.full_name ?? m.profile?.email ?? "Aluno"}</p>
                     <p className="text-xs text-muted-foreground">{m.profile?.email}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge variant="outline">{m.role}</Badge>
-                    <Badge
-                      variant={m.subscription?.status === "blocked" ? "destructive" : "secondary"}
-                    >
+                    <Badge variant={m.subscription?.status === "blocked" ? "destructive" : "secondary"}>
                       {m.subscription?.status ?? "sem assinatura"}
                     </Badge>
-                    <Badge variant={m.status === "ativo" ? "secondary" : "outline"}>
-                      {m.status}
-                    </Badge>
-                    {m.status === "ativo" ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setMemberStatus.mutate({
-                            memberId: m.id,
-                            status: "removido",
-                            name: m.profile?.full_name ?? m.profile?.email ?? "aluno",
-                          })
-                        }
-                      >
-                        Remover
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setMemberStatus.mutate({
-                            memberId: m.id,
-                            status: "ativo",
-                            name: m.profile?.full_name ?? m.profile?.email ?? "aluno",
-                          })
-                        }
-                      >
-                        Reativar
-                      </Button>
-                    )}
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </TabsContent>
-
-        <TabsContent value="historico">
-          {!auditLog?.length ? (
-            <EmptyState
-              title="Nada registrado ainda"
-              description="Alterações em disciplinas e atividades aparecem aqui."
-            />
-          ) : (
-            <ul className="space-y-2">
-              {auditLog.map((entry) => (
-                <li key={entry.id} className="rounded-lg border bg-card p-4 text-sm">
-                  <p>{entry.summary}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatDate(entry.created_at)}
-                  </p>
                 </li>
               ))}
             </ul>
@@ -515,13 +286,14 @@ function Gestao() {
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              saveSubject.mutate({
-                ...(subjectDialog?.id ? { id: subjectDialog.id } : {}),
+              const values: Partial<Subject> = {
                 name: String(fd.get("name")),
                 professor: String(fd.get("professor")),
                 schedule: String(fd.get("schedule")),
                 color: String(fd.get("color")),
-              });
+              };
+              if (subjectDialog?.id) values.id = subjectDialog.id;
+              saveSubject.mutate(values);
             }}
           >
             <div className="space-y-2">
@@ -534,22 +306,11 @@ function Gestao() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-sched">Horário</Label>
-              <Input
-                id="s-sched"
-                name="schedule"
-                defaultValue={subjectDialog?.schedule ?? ""}
-                placeholder="Seg 19:00 - 22:00"
-              />
+              <Input id="s-sched" name="schedule" defaultValue={subjectDialog?.schedule ?? ""} placeholder="Seg 19:00 - 22:00" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-color">Cor</Label>
-              <Input
-                id="s-color"
-                name="color"
-                type="color"
-                className="h-10 w-20"
-                defaultValue={subjectDialog?.color ?? "#6366f1"}
-              />
+              <Input id="s-color" name="color" type="color" className="h-10 w-20" defaultValue={subjectDialog?.color ?? "#6366f1"} />
             </div>
           </form>
           <DialogFooter>
@@ -561,15 +322,10 @@ function Gestao() {
       </Dialog>
 
       {/* Dialogo atividade */}
-      <Dialog
-        open={assignmentDialog !== null}
-        onOpenChange={(o) => !o && setAssignmentDialog(null)}
-      >
+      <Dialog open={assignmentDialog !== null} onOpenChange={(o) => !o && setAssignmentDialog(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {assignmentDialog?.id ? "Editar atividade" : "Nova atividade"}
-            </DialogTitle>
+            <DialogTitle>{assignmentDialog?.id ? "Editar atividade" : "Nova atividade"}</DialogTitle>
           </DialogHeader>
           <form
             id="assignment-form"
@@ -578,8 +334,7 @@ function Gestao() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const weightRaw = String(fd.get("weight") ?? "");
-              saveAssignment.mutate({
-                ...(assignmentDialog?.id ? { id: assignmentDialog.id } : {}),
+              const values: Partial<Assignment> = {
                 subject_id: String(fd.get("subject_id")),
                 title: String(fd.get("title")),
                 type: String(fd.get("type")) as AssignmentType,
@@ -587,17 +342,14 @@ function Gestao() {
                 due_at: String(fd.get("due_at")),
                 weight: weightRaw ? Number(weightRaw) : null,
                 link_url: String(fd.get("link_url")) || null,
-              });
+              };
+              if (assignmentDialog?.id) values.id = assignmentDialog.id;
+              saveAssignment.mutate(values);
             }}
           >
             <div className="space-y-2">
               <Label htmlFor="a-title">Título</Label>
-              <Input
-                id="a-title"
-                name="title"
-                required
-                defaultValue={assignmentDialog?.title ?? ""}
-              />
+              <Input id="a-title" name="title" required defaultValue={assignmentDialog?.title ?? ""} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="a-subject">Disciplina</Label>
@@ -649,32 +401,15 @@ function Gestao() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="a-weight">Peso (opcional)</Label>
-              <Input
-                id="a-weight"
-                name="weight"
-                type="number"
-                step="0.1"
-                min="0"
-                defaultValue={assignmentDialog?.weight ?? ""}
-              />
+              <Input id="a-weight" name="weight" type="number" step="0.1" min="0" defaultValue={assignmentDialog?.weight ?? ""} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="a-link">Link / anexo (opcional)</Label>
-              <Input
-                id="a-link"
-                name="link_url"
-                type="url"
-                defaultValue={assignmentDialog?.link_url ?? ""}
-              />
+              <Input id="a-link" name="link_url" type="url" defaultValue={assignmentDialog?.link_url ?? ""} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="a-desc">Descrição</Label>
-              <Textarea
-                id="a-desc"
-                name="description"
-                rows={3}
-                defaultValue={assignmentDialog?.description ?? ""}
-              />
+              <Textarea id="a-desc" name="description" rows={3} defaultValue={assignmentDialog?.description ?? ""} />
             </div>
           </form>
           <DialogFooter>

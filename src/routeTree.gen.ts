@@ -16,19 +16,11 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
-import { Route as AuthenticatedBootstrapAdminRouteImport } from './routes/_authenticated/bootstrap-admin'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
-import { Route as AuthenticatedPreferenciasRouteImport } from './routes/_authenticated/preferencias'
 import { Route as AuthenticatedDisciplinasIndexRouteImport } from './routes/_authenticated/disciplinas.index'
 import { Route as AuthenticatedDisciplinasIdRouteImport } from './routes/_authenticated/disciplinas.$id'
-import { Route as ApiAdminBootstrapRouteImport } from './routes/api.admin.bootstrap'
-import { Route as ApiCronAssinaturasRouteImport } from './routes/api.cron.assinaturas'
-import { Route as ApiCronLembretesRouteImport } from './routes/api.cron.lembretes'
-import { Route as ApiPagamentosCartaoRouteImport } from './routes/api.pagamentos.cartao'
-import { Route as ApiPagamentosPixRouteImport } from './routes/api.pagamentos.pix'
-import { Route as ApiWebhooksPagamentosRouteImport } from './routes/api.webhooks.pagamentos'
-import { Route as ApiWebhooksStripeRouteImport } from './routes/api.webhooks.stripe'
+import { Route as ApiPublicWebhooksPagamentosRouteImport } from './routes/api/public/webhooks/pagamentos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,12 +56,6 @@ const AuthenticatedAssinaturaRoute = AuthenticatedAssinaturaRouteImport.update({
   path: '/assinatura',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedBootstrapAdminRoute =
-  AuthenticatedBootstrapAdminRouteImport.update({
-    id: '/bootstrap-admin',
-    path: '/bootstrap-admin',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
   id: '/gestao',
   path: '/gestao',
@@ -80,12 +66,6 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPreferenciasRoute =
-  AuthenticatedPreferenciasRouteImport.update({
-    id: '/preferencias',
-    path: '/preferencias',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedDisciplinasIndexRoute =
   AuthenticatedDisciplinasIndexRouteImport.update({
     id: '/disciplinas/',
@@ -98,41 +78,12 @@ const AuthenticatedDisciplinasIdRoute =
     path: '/disciplinas/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiAdminBootstrapRoute = ApiAdminBootstrapRouteImport.update({
-  id: '/api/admin/bootstrap',
-  path: '/api/admin/bootstrap',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCronAssinaturasRoute = ApiCronAssinaturasRouteImport.update({
-  id: '/api/cron/assinaturas',
-  path: '/api/cron/assinaturas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCronLembretesRoute = ApiCronLembretesRouteImport.update({
-  id: '/api/cron/lembretes',
-  path: '/api/cron/lembretes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPagamentosCartaoRoute = ApiPagamentosCartaoRouteImport.update({
-  id: '/api/pagamentos/cartao',
-  path: '/api/pagamentos/cartao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPagamentosPixRoute = ApiPagamentosPixRouteImport.update({
-  id: '/api/pagamentos/pix',
-  path: '/api/pagamentos/pix',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiWebhooksPagamentosRoute = ApiWebhooksPagamentosRouteImport.update({
-  id: '/api/webhooks/pagamentos',
-  path: '/api/webhooks/pagamentos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiWebhooksStripeRoute = ApiWebhooksStripeRouteImport.update({
-  id: '/api/webhooks/stripe',
-  path: '/api/webhooks/stripe',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApiPublicWebhooksPagamentosRoute =
+  ApiPublicWebhooksPagamentosRouteImport.update({
+    id: '/api/public/webhooks/pagamentos',
+    path: '/api/public/webhooks/pagamentos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -141,19 +92,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
-  '/bootstrap-admin': typeof AuthenticatedBootstrapAdminRoute
   '/gestao': typeof AuthenticatedGestaoRoute
   '/painel': typeof AuthenticatedPainelRoute
-  '/preferencias': typeof AuthenticatedPreferenciasRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
-  '/api/admin/bootstrap': typeof ApiAdminBootstrapRoute
-  '/api/cron/assinaturas': typeof ApiCronAssinaturasRoute
-  '/api/cron/lembretes': typeof ApiCronLembretesRoute
-  '/api/pagamentos/cartao': typeof ApiPagamentosCartaoRoute
-  '/api/pagamentos/pix': typeof ApiPagamentosPixRoute
-  '/api/webhooks/pagamentos': typeof ApiWebhooksPagamentosRoute
-  '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -162,19 +105,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/assinatura': typeof AuthenticatedAssinaturaRoute
-  '/bootstrap-admin': typeof AuthenticatedBootstrapAdminRoute
   '/gestao': typeof AuthenticatedGestaoRoute
   '/painel': typeof AuthenticatedPainelRoute
-  '/preferencias': typeof AuthenticatedPreferenciasRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
-  '/api/admin/bootstrap': typeof ApiAdminBootstrapRoute
-  '/api/cron/assinaturas': typeof ApiCronAssinaturasRoute
-  '/api/cron/lembretes': typeof ApiCronLembretesRoute
-  '/api/pagamentos/cartao': typeof ApiPagamentosCartaoRoute
-  '/api/pagamentos/pix': typeof ApiPagamentosPixRoute
-  '/api/webhooks/pagamentos': typeof ApiWebhooksPagamentosRoute
-  '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/disciplinas': typeof AuthenticatedDisciplinasIndexRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -185,19 +120,11 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
-  '/_authenticated/bootstrap-admin': typeof AuthenticatedBootstrapAdminRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
-  '/_authenticated/preferencias': typeof AuthenticatedPreferenciasRoute
   '/_authenticated/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
-  '/api/admin/bootstrap': typeof ApiAdminBootstrapRoute
-  '/api/cron/assinaturas': typeof ApiCronAssinaturasRoute
-  '/api/cron/lembretes': typeof ApiCronLembretesRoute
-  '/api/pagamentos/cartao': typeof ApiPagamentosCartaoRoute
-  '/api/pagamentos/pix': typeof ApiPagamentosPixRoute
-  '/api/webhooks/pagamentos': typeof ApiWebhooksPagamentosRoute
-  '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/_authenticated/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -208,19 +135,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agenda'
     | '/assinatura'
-    | '/bootstrap-admin'
     | '/gestao'
     | '/painel'
-    | '/preferencias'
     | '/disciplinas/$id'
-    | '/api/admin/bootstrap'
-    | '/api/cron/assinaturas'
-    | '/api/cron/lembretes'
-    | '/api/pagamentos/cartao'
-    | '/api/pagamentos/pix'
-    | '/api/webhooks/pagamentos'
-    | '/api/webhooks/stripe'
     | '/disciplinas/'
+    | '/api/public/webhooks/pagamentos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -229,19 +148,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agenda'
     | '/assinatura'
-    | '/bootstrap-admin'
     | '/gestao'
     | '/painel'
-    | '/preferencias'
     | '/disciplinas/$id'
-    | '/api/admin/bootstrap'
-    | '/api/cron/assinaturas'
-    | '/api/cron/lembretes'
-    | '/api/pagamentos/cartao'
-    | '/api/pagamentos/pix'
-    | '/api/webhooks/pagamentos'
-    | '/api/webhooks/stripe'
     | '/disciplinas'
+    | '/api/public/webhooks/pagamentos'
   id:
     | '__root__'
     | '/'
@@ -251,19 +162,11 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/agenda'
     | '/_authenticated/assinatura'
-    | '/_authenticated/bootstrap-admin'
     | '/_authenticated/gestao'
     | '/_authenticated/painel'
-    | '/_authenticated/preferencias'
     | '/_authenticated/disciplinas/$id'
-    | '/api/admin/bootstrap'
-    | '/api/cron/assinaturas'
-    | '/api/cron/lembretes'
-    | '/api/pagamentos/cartao'
-    | '/api/pagamentos/pix'
-    | '/api/webhooks/pagamentos'
-    | '/api/webhooks/stripe'
     | '/_authenticated/disciplinas/'
+    | '/api/public/webhooks/pagamentos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -271,13 +174,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  ApiAdminBootstrapRoute: typeof ApiAdminBootstrapRoute
-  ApiCronAssinaturasRoute: typeof ApiCronAssinaturasRoute
-  ApiCronLembretesRoute: typeof ApiCronLembretesRoute
-  ApiPagamentosCartaoRoute: typeof ApiPagamentosCartaoRoute
-  ApiPagamentosPixRoute: typeof ApiPagamentosPixRoute
-  ApiWebhooksPagamentosRoute: typeof ApiWebhooksPagamentosRoute
-  ApiWebhooksStripeRoute: typeof ApiWebhooksStripeRoute
+  ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -331,13 +228,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssinaturaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/bootstrap-admin': {
-      id: '/_authenticated/bootstrap-admin'
-      path: '/bootstrap-admin'
-      fullPath: '/bootstrap-admin'
-      preLoaderRoute: typeof AuthenticatedBootstrapAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/gestao': {
       id: '/_authenticated/gestao'
       path: '/gestao'
@@ -350,13 +240,6 @@ declare module '@tanstack/react-router' {
       path: '/painel'
       fullPath: '/painel'
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/preferencias': {
-      id: '/_authenticated/preferencias'
-      path: '/preferencias'
-      fullPath: '/preferencias'
-      preLoaderRoute: typeof AuthenticatedPreferenciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/disciplinas/': {
@@ -373,53 +256,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDisciplinasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/admin/bootstrap': {
-      id: '/api/admin/bootstrap'
-      path: '/api/admin/bootstrap'
-      fullPath: '/api/admin/bootstrap'
-      preLoaderRoute: typeof ApiAdminBootstrapRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/cron/assinaturas': {
-      id: '/api/cron/assinaturas'
-      path: '/api/cron/assinaturas'
-      fullPath: '/api/cron/assinaturas'
-      preLoaderRoute: typeof ApiCronAssinaturasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/cron/lembretes': {
-      id: '/api/cron/lembretes'
-      path: '/api/cron/lembretes'
-      fullPath: '/api/cron/lembretes'
-      preLoaderRoute: typeof ApiCronLembretesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/pagamentos/cartao': {
-      id: '/api/pagamentos/cartao'
-      path: '/api/pagamentos/cartao'
-      fullPath: '/api/pagamentos/cartao'
-      preLoaderRoute: typeof ApiPagamentosCartaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/pagamentos/pix': {
-      id: '/api/pagamentos/pix'
-      path: '/api/pagamentos/pix'
-      fullPath: '/api/pagamentos/pix'
-      preLoaderRoute: typeof ApiPagamentosPixRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/webhooks/pagamentos': {
-      id: '/api/webhooks/pagamentos'
-      path: '/api/webhooks/pagamentos'
-      fullPath: '/api/webhooks/pagamentos'
-      preLoaderRoute: typeof ApiWebhooksPagamentosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/webhooks/stripe': {
-      id: '/api/webhooks/stripe'
-      path: '/api/webhooks/stripe'
-      fullPath: '/api/webhooks/stripe'
-      preLoaderRoute: typeof ApiWebhooksStripeRouteImport
+    '/api/public/webhooks/pagamentos': {
+      id: '/api/public/webhooks/pagamentos'
+      path: '/api/public/webhooks/pagamentos'
+      fullPath: '/api/public/webhooks/pagamentos'
+      preLoaderRoute: typeof ApiPublicWebhooksPagamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -429,10 +270,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
-  AuthenticatedBootstrapAdminRoute: typeof AuthenticatedBootstrapAdminRoute
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
-  AuthenticatedPreferenciasRoute: typeof AuthenticatedPreferenciasRoute
   AuthenticatedDisciplinasIdRoute: typeof AuthenticatedDisciplinasIdRoute
   AuthenticatedDisciplinasIndexRoute: typeof AuthenticatedDisciplinasIndexRoute
 }
@@ -441,10 +280,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
-  AuthenticatedBootstrapAdminRoute: AuthenticatedBootstrapAdminRoute,
   AuthenticatedGestaoRoute: AuthenticatedGestaoRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
-  AuthenticatedPreferenciasRoute: AuthenticatedPreferenciasRoute,
   AuthenticatedDisciplinasIdRoute: AuthenticatedDisciplinasIdRoute,
   AuthenticatedDisciplinasIndexRoute: AuthenticatedDisciplinasIndexRoute,
 }
@@ -457,13 +294,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  ApiAdminBootstrapRoute: ApiAdminBootstrapRoute,
-  ApiCronAssinaturasRoute: ApiCronAssinaturasRoute,
-  ApiCronLembretesRoute: ApiCronLembretesRoute,
-  ApiPagamentosCartaoRoute: ApiPagamentosCartaoRoute,
-  ApiPagamentosPixRoute: ApiPagamentosPixRoute,
-  ApiWebhooksPagamentosRoute: ApiWebhooksPagamentosRoute,
-  ApiWebhooksStripeRoute: ApiWebhooksStripeRoute,
+  ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
