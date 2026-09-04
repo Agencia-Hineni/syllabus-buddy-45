@@ -40,7 +40,11 @@ function Assinatura() {
   const { data: payments } = useQuery(paymentsQuery());
   const queryClient = useQueryClient();
   const createPix = useServerFn(generatePixCharge);
-  const [pix, setPix] = useState<{ qrCode: string; copiaCola: string; expiresAt: string } | null>(null);
+  const [pix, setPix] = useState<{
+    qrCode: string | null;
+    copiaCola: string | null;
+    expiresAt: string | null;
+  } | null>(null);
 
   const price = membership?.classes?.monthly_price_cents ?? 0;
 
