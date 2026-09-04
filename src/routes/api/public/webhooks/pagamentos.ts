@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { parseWebhookPayload } from "@/lib/payments/payment-service";
 import { PaymentProviderError } from "@/lib/payments/types";
+import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
   server: {
@@ -44,7 +45,7 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
         const { error: insertEventError } = await supabaseAdmin.from("payment_webhook_events").insert({
           provider,
           event_id: payload.eventId,
-          payload: payload.raw as unknown,
+          payload: payload.raw as Json,
           processed_at: new Date().toISOString(),
         });
 
