@@ -100,7 +100,7 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
         if (verifiedStatus === "paid" && payment.subscription_id && !alreadySettled) {
           const { data: subscription } = await supabaseAdmin
             .from("subscriptions")
-            .select("id, current_period_end, status")
+            .select("id, current_period_end, status, classes(name)")
             .eq("id", payment.subscription_id)
             .single();
 
@@ -116,6 +116,7 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
             .from("subscriptions")
             .update({
               status: "active",
+              blocked_at: null,
               current_period_end: periodEnd.toISOString(),
               updated_at: new Date().toISOString(),
             })
@@ -124,6 +125,30 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
           if (subscriptionError) {
             console.error("Failed to update subscription", subscriptionError);
             return new Response("Failed to update subscription", { status: 500 });
+          }
+
+          const { data: profile } = await supabaseAdmin
+            .from("profiles")
+            .select("email, full_name")
+            .eq("id", payment.user_id)
+            .maybeSingle();
+
+          if (profile?.email) {
+            const { sendAndLog } = await import("@/lib/notifications/send.server");
+            const { paymentConfirmedEmail } = await import("@/lib/notifications/templates.server");
+            const { subject, html } = paymentConfirmedEmail({
+              studentName: profile.full_name ?? "aluno",
+              className: subscription?.classes?.name ?? "sua turma",
+              amountCents: payment.amount_cents,
+            });
+            await sendAndLog({
+              userId: payment.user_id,
+              kind: "payment_confirmed",
+              dedupeKey: `payment_confirmed:${payment.id}`,
+              to: profile.email,
+              subject,
+              html,
+            });
           }
         }
 

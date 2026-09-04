@@ -18,8 +18,11 @@ import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedPreferenciasRouteImport } from './routes/_authenticated/preferencias'
 import { Route as AuthenticatedDisciplinasIndexRouteImport } from './routes/_authenticated/disciplinas.index'
 import { Route as AuthenticatedDisciplinasIdRouteImport } from './routes/_authenticated/disciplinas.$id'
+import { Route as ApiCronAssinaturasRouteImport } from './routes/api/cron/assinaturas'
+import { Route as ApiCronLembretesRouteImport } from './routes/api/cron/lembretes'
 import { Route as ApiPublicWebhooksPagamentosRouteImport } from './routes/api/public/webhooks/pagamentos'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,6 +69,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPreferenciasRoute =
+  AuthenticatedPreferenciasRouteImport.update({
+    id: '/preferencias',
+    path: '/preferencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDisciplinasIndexRoute =
   AuthenticatedDisciplinasIndexRouteImport.update({
     id: '/disciplinas/',
@@ -78,6 +87,16 @@ const AuthenticatedDisciplinasIdRoute =
     path: '/disciplinas/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiCronAssinaturasRoute = ApiCronAssinaturasRouteImport.update({
+  id: '/api/cron/assinaturas',
+  path: '/api/cron/assinaturas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronLembretesRoute = ApiCronLembretesRouteImport.update({
+  id: '/api/cron/lembretes',
+  path: '/api/cron/lembretes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksPagamentosRoute =
   ApiPublicWebhooksPagamentosRouteImport.update({
     id: '/api/public/webhooks/pagamentos',
@@ -94,7 +113,10 @@ export interface FileRoutesByFullPath {
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/gestao': typeof AuthenticatedGestaoRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/preferencias': typeof AuthenticatedPreferenciasRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
+  '/api/cron/assinaturas': typeof ApiCronAssinaturasRoute
+  '/api/cron/lembretes': typeof ApiCronLembretesRoute
   '/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
   '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
@@ -107,7 +129,10 @@ export interface FileRoutesByTo {
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/gestao': typeof AuthenticatedGestaoRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/preferencias': typeof AuthenticatedPreferenciasRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
+  '/api/cron/assinaturas': typeof ApiCronAssinaturasRoute
+  '/api/cron/lembretes': typeof ApiCronLembretesRoute
   '/disciplinas': typeof AuthenticatedDisciplinasIndexRoute
   '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
@@ -122,7 +147,10 @@ export interface FileRoutesById {
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/preferencias': typeof AuthenticatedPreferenciasRoute
   '/_authenticated/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
+  '/api/cron/assinaturas': typeof ApiCronAssinaturasRoute
+  '/api/cron/lembretes': typeof ApiCronLembretesRoute
   '/_authenticated/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
   '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
@@ -137,7 +165,10 @@ export interface FileRouteTypes {
     | '/assinatura'
     | '/gestao'
     | '/painel'
+    | '/preferencias'
     | '/disciplinas/$id'
+    | '/api/cron/assinaturas'
+    | '/api/cron/lembretes'
     | '/disciplinas/'
     | '/api/public/webhooks/pagamentos'
   fileRoutesByTo: FileRoutesByTo
@@ -150,7 +181,10 @@ export interface FileRouteTypes {
     | '/assinatura'
     | '/gestao'
     | '/painel'
+    | '/preferencias'
     | '/disciplinas/$id'
+    | '/api/cron/assinaturas'
+    | '/api/cron/lembretes'
     | '/disciplinas'
     | '/api/public/webhooks/pagamentos'
   id:
@@ -164,7 +198,10 @@ export interface FileRouteTypes {
     | '/_authenticated/assinatura'
     | '/_authenticated/gestao'
     | '/_authenticated/painel'
+    | '/_authenticated/preferencias'
     | '/_authenticated/disciplinas/$id'
+    | '/api/cron/assinaturas'
+    | '/api/cron/lembretes'
     | '/_authenticated/disciplinas/'
     | '/api/public/webhooks/pagamentos'
   fileRoutesById: FileRoutesById
@@ -174,6 +211,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiCronAssinaturasRoute: typeof ApiCronAssinaturasRoute
+  ApiCronLembretesRoute: typeof ApiCronLembretesRoute
   ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
 }
 
@@ -242,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/preferencias': {
+      id: '/_authenticated/preferencias'
+      path: '/preferencias'
+      fullPath: '/preferencias'
+      preLoaderRoute: typeof AuthenticatedPreferenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/disciplinas/': {
       id: '/_authenticated/disciplinas/'
       path: '/disciplinas'
@@ -255,6 +301,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/disciplinas/$id'
       preLoaderRoute: typeof AuthenticatedDisciplinasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/cron/assinaturas': {
+      id: '/api/cron/assinaturas'
+      path: '/api/cron/assinaturas'
+      fullPath: '/api/cron/assinaturas'
+      preLoaderRoute: typeof ApiCronAssinaturasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/lembretes': {
+      id: '/api/cron/lembretes'
+      path: '/api/cron/lembretes'
+      fullPath: '/api/cron/lembretes'
+      preLoaderRoute: typeof ApiCronLembretesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/webhooks/pagamentos': {
       id: '/api/public/webhooks/pagamentos'
@@ -272,6 +332,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedPreferenciasRoute: typeof AuthenticatedPreferenciasRoute
   AuthenticatedDisciplinasIdRoute: typeof AuthenticatedDisciplinasIdRoute
   AuthenticatedDisciplinasIndexRoute: typeof AuthenticatedDisciplinasIndexRoute
 }
@@ -282,6 +343,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
   AuthenticatedGestaoRoute: AuthenticatedGestaoRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedPreferenciasRoute: AuthenticatedPreferenciasRoute,
   AuthenticatedDisciplinasIdRoute: AuthenticatedDisciplinasIdRoute,
   AuthenticatedDisciplinasIndexRoute: AuthenticatedDisciplinasIndexRoute,
 }
@@ -294,6 +356,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiCronAssinaturasRoute: ApiCronAssinaturasRoute,
+  ApiCronLembretesRoute: ApiCronLembretesRoute,
   ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
 }
 export const routeTree = rootRouteImport

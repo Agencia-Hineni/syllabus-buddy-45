@@ -11,14 +11,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AssignmentRow } from "@/components/AssignmentRow";
 import { EmptyState } from "@/components/EmptyState";
+import { JoinClassCard } from "@/components/JoinClassCard";
 
 export const Route = createFileRoute("/_authenticated/painel")({
   head: () => ({
     meta: [
       { title: "Painel | Agenda Acadêmica" },
-      { name: "description", content: "Veja o que vence nos próximos dias, o que está atrasado e o resumo da sua semana." },
+      {
+        name: "description",
+        content:
+          "Veja o que vence nos próximos dias, o que está atrasado e o resumo da sua semana.",
+      },
       { property: "og:title", content: "Painel | Agenda Acadêmica" },
-      { property: "og:description", content: "Veja o que vence nos próximos dias, o que está atrasado e o resumo da sua semana." },
+      {
+        property: "og:description",
+        content:
+          "Veja o que vence nos próximos dias, o que está atrasado e o resumo da sua semana.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -52,6 +61,7 @@ function Painel() {
       <EmptyState
         title="Você ainda não está em uma turma"
         description="Peça o código de convite ao líder da turma para entrar e ver as atividades."
+        action={<JoinClassCard />}
       />
     );
   }
@@ -66,8 +76,18 @@ function Painel() {
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard icon={AlertTriangle} label="Atrasadas" value={overdue.length} tone="destructive" />
-        <StatCard icon={CalendarClock} label="Próximos 7 dias" value={upcoming.length} tone="accent" />
+        <StatCard
+          icon={AlertTriangle}
+          label="Atrasadas"
+          value={overdue.length}
+          tone="destructive"
+        />
+        <StatCard
+          icon={CalendarClock}
+          label="Próximos 7 dias"
+          value={upcoming.length}
+          tone="accent"
+        />
         <StatCard icon={CheckCircle2} label="Concluídas" value={completedThisWeek} tone="success" />
       </div>
 
@@ -76,7 +96,11 @@ function Painel() {
       ) : (
         <div className="space-y-8">
           <Section title="Atrasadas" items={overdue} empty="Nada atrasado. Bom trabalho!" />
-          <Section title="Vence nos próximos 7 dias" items={upcoming} empty="Nenhuma entrega nos próximos 7 dias." />
+          <Section
+            title="Vence nos próximos 7 dias"
+            items={upcoming}
+            empty="Nenhuma entrega nos próximos 7 dias."
+          />
           <Section title="Mais adiante" items={later} empty="Nenhuma outra entrega programada." />
         </div>
       )}
@@ -129,7 +153,11 @@ function StatCard({
   tone: "destructive" | "accent" | "success";
 }) {
   const toneClass =
-    tone === "destructive" ? "text-destructive" : tone === "success" ? "text-success" : "text-accent-foreground";
+    tone === "destructive"
+      ? "text-destructive"
+      : tone === "success"
+        ? "text-success"
+        : "text-accent-foreground";
   return (
     <Card>
       <CardHeader className="pb-2">

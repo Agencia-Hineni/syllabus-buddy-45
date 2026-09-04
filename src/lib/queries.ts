@@ -8,6 +8,8 @@ export type ClassMember = Database["public"]["Tables"]["class_members"]["Row"];
 export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type NotificationPreferences =
+  Database["public"]["Tables"]["notification_preferences"]["Row"];
 export type AssignmentType = Database["public"]["Enums"]["assignment_type"];
 export type ClassRole = Database["public"]["Enums"]["class_role"];
 
@@ -17,7 +19,8 @@ function unwrap<T>({ data, error }: { data: T | null; error: { message: string }
 }
 
 export type Membership = ClassMember & {
-  classes: (ClassRow & { courses: { name: string; institutions: { name: string } | null } | null }) | null;
+  classes:
+    (ClassRow & { courses: { name: string; institutions: { name: string } | null } | null }) | null;
 };
 
 export const membershipQuery = () => ({
@@ -45,7 +48,11 @@ export const isAdminQuery = () => ({
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) return false;
-    const res = await supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin");
+    const res = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .eq("role", "admin");
     if (res.error) throw new Error(res.error.message);
     return (res.data ?? []).length > 0;
   },
@@ -125,6 +132,38 @@ export const paymentsQuery = () => ({
   queryFn: async (): Promise<Payment[]> =>
     unwrap(await supabase.from("payments").select("*").order("created_at", { ascending: false })),
 });
+
+export const notificationPreferencesQuery = () => ({
+  queryKey: ["notification-preferences"],
+  queryFn: async (): Promise<NotificationPreferences | null> => {
+    const res = await supabase.from("notification_preferences").select("*").maybeSingle();
+    if (res.error) throw new Error(res.error.message);
+    return res.data;
+  },
+});
+
+export async function updateNotificationPreferences(
+  patch: Partial<
+    Pick<
+      NotificationPreferences,
+      | "email_enabled"
+      | "remind_7_days"
+      | "remind_3_days"
+      | "remind_1_day"
+      | "weekly_digest"
+      | "billing_alerts"
+    >
+  >,
+) {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error("Não autenticado");
+  const { error } = await supabase
+    .from("notification_preferences")
+    .update(patch)
+    .eq("user_id", uid);
+  if (error) throw new Error(error.message);
+}
 
 export async function logAudit(input: {
   classId: string | null;

@@ -16,9 +16,15 @@ export const Route = createFileRoute("/_authenticated/assinatura")({
   head: () => ({
     meta: [
       { title: "Assinatura | Agenda Acadêmica" },
-      { name: "description", content: "Situação da sua assinatura, vencimento e histórico de pagamentos." },
+      {
+        name: "description",
+        content: "Situação da sua assinatura, vencimento e histórico de pagamentos.",
+      },
       { property: "og:title", content: "Assinatura | Agenda Acadêmica" },
-      { property: "og:description", content: "Situação da sua assinatura, vencimento e histórico de pagamentos." },
+      {
+        property: "og:description",
+        content: "Situação da sua assinatura, vencimento e histórico de pagamentos.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -34,10 +40,35 @@ const statusLabel: Record<string, string> = {
   canceled: "Cancelada",
 };
 
+const paymentStatusLabel: Record<string, string> = {
+  pending: "Aguardando pagamento",
+  paid: "Pago",
+  failed: "Falhou",
+  refunded: "Reembolsado",
+  canceled: "Cancelado",
+  expired: "Expirado",
+};
+
 function Assinatura() {
   const { data: membership } = useQuery(membershipQuery());
-  const { data: subscription } = useQuery(subscriptionQuery());
-  const { data: payments } = useQuery(paymentsQuery());
+  const { data: subscription } = useQuery({
+    ...subscriptionQuery(),
+    // A payment can settle at any moment via the webhook; poll while the
+    // status isn't final so "active" shows up without a manual reload.
+    refetchInterval: (query) =>
+      query.state.data &&
+      query.state.data.status !== "active" &&
+      query.state.data.status !== "canceled"
+        ? 5000
+        : false,
+  });
+  const { data: payments } = useQuery({
+    ...paymentsQuery(),
+    // Poll while there's a pending Pix charge so the confirmation from the
+    // webhook shows up without the student needing to reload the page.
+    refetchInterval: (query) =>
+      query.state.data?.some((p) => p.status === "pending") ? 5000 : false,
+  });
   const queryClient = useQueryClient();
   const createPix = useServerFn(generatePixCharge);
   const [pix, setPix] = useState<{
@@ -68,7 +99,6 @@ function Assinatura() {
       toast.error(error.message || "Não foi possível gerar a cobrança Pix.");
     },
   });
-
 
   return (
     <div className="space-y-6">
@@ -146,19 +176,26 @@ function Assinatura() {
         </CardContent>
       </Card>
 
-
       <section>
         <h2 className="mb-3 text-lg">Histórico de pagamentos</h2>
         {!payments || payments.length === 0 ? (
-          <EmptyState title="Nenhum pagamento ainda" description="Seus pagamentos aparecerão aqui." />
+          <EmptyState
+            title="Nenhum pagamento ainda"
+            description="Seus pagamentos aparecerão aqui."
+          />
         ) : (
           <ul className="space-y-2">
             {payments.map((p) => (
-              <li key={p.id} className="flex items-center justify-between rounded-lg border bg-card p-4 text-sm">
+              <li
+                key={p.id}
+                className="flex items-center justify-between rounded-lg border bg-card p-4 text-sm"
+              >
                 <span>{formatDate(p.created_at)}</span>
                 <span>{p.method === "pix" ? "Pix" : "Cartão"}</span>
                 <span>{formatMoney(p.amount_cents)}</span>
-                <Badge variant={p.status === "paid" ? "secondary" : "outline"}>{p.status}</Badge>
+                <Badge variant={p.status === "paid" ? "secondary" : "outline"}>
+                  {paymentStatusLabel[p.status] ?? p.status}
+                </Badge>
               </li>
             ))}
           </ul>
