@@ -1,7 +1,7 @@
 # Roadmap — Agenda Acadêmica
 
 ## Em andamento
-- [ ] FASE 6 — Assinaturas e pagamentos (Pix Efí ligado à UI; falta secrets Efí e cartão Stripe)
+- [ ] FASE 6 — Assinaturas e pagamentos (Pix Efí implementado ponta a ponta e webhook reverifica com a Efí antes de liberar acesso; falta configurar secrets Efí em produção e cartão Stripe)
 - [ ] FASE 7 — E-mails e notificações (templates, lembretes acadêmicos/financeiros, preferências)
 - [ ] FASE 8 — Polimento de interface (responsividade, estados vazios, acessibilidade)
 

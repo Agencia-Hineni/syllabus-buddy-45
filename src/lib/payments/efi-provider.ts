@@ -63,32 +63,84 @@ const EFI_STATUS_MAP: Record<string, WebhookPayload["status"]> = {
   ATIVA: "pending",
 };
 
+const PIX_EXPIRATION_SECONDS = 24 * 60 * 60;
+
+interface EfiCobResponse {
+  txid: string;
+  loc: { id: number };
+}
+
+interface EfiLocQrCodeResponse {
+  qrcode: string;
+  imagemQrcode: string;
+}
+
+async function createCob(
+  pfx: Buffer,
+  passphrase: string | undefined,
+  token: string,
+  amountCents: number,
+  description: string,
+): Promise<EfiCobResponse> {
+  const chave = requireEnv("EFI_PIX_KEY");
+  return httpsJson<EfiCobResponse>(
+    {
+      host: apiHost(),
+      path: "/v2/cob",
+      method: "POST",
+      pfx,
+      passphrase,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    },
+    {
+      calendario: { expiracao: PIX_EXPIRATION_SECONDS },
+      valor: { original: (amountCents / 100).toFixed(2) },
+      chave,
+      solicitacaoPagador: description.slice(0, 140),
+    },
+  );
+}
+
+async function getLocQrCode(
+  pfx: Buffer,
+  passphrase: string | undefined,
+  token: string,
+  locId: number,
+): Promise<EfiLocQrCodeResponse> {
+  return httpsJson<EfiLocQrCodeResponse>({
+    host: apiHost(),
+    path: `/v2/loc/${locId}/qrcode`,
+    method: "GET",
+    pfx,
+    passphrase,
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 /**
  * Efí / Gerencianet provider for Brazilian Pix.
  *
- * `fetchChargeStatus` makes a real, authenticated call (OAuth2 + mTLS) to
- * Efí's API — it's the source of truth the webhook re-checks against before
- * trusting any "paid" status. `createPixCharge` is still a stub: it never
- * creates a real charge on Efí's side, so there is nothing yet for
- * `fetchChargeStatus` to find until it's wired up the same way (POST
- * /v2/cob/:txid + GET /v2/loc/:id/qrcode).
+ * Both `createPixCharge` and `fetchChargeStatus` make real, authenticated
+ * calls (OAuth2 + mTLS) to Efí's API — the webhook re-checks against
+ * `fetchChargeStatus` before trusting any "paid" status.
  */
 export const efiProvider: PaymentProvider = {
   name: "efi",
 
-  async createPixCharge({ userId, classId, subscriptionId, amountCents, description }) {
-    // Credentials are validated eagerly so the error surfaces before any network call.
-    requireEnv("EFI_CLIENT_ID");
-    requireEnv("EFI_CLIENT_SECRET");
-    requireEnv("EFI_CERTIFICATE_BASE64");
+  async createPixCharge({ amountCents, description }) {
+    const certBase64 = requireEnv("EFI_CERTIFICATE_BASE64");
+    const pfx = Buffer.from(certBase64, "base64");
+    const passphrase = process.env["EFI_CERT_PASSPHRASE"] || undefined;
 
-    // Stub: replace with Efí POST /v2/cob e then GET /v2/cob/{txid}/qrCode
-    const txid = `EFI${Date.now()}${Math.random().toString(36).slice(2, 7)}`;
+    const token = await getAccessToken(pfx, passphrase);
+    const cob = await createCob(pfx, passphrase, token, amountCents, description);
+    const { qrcode, imagemQrcode } = await getLocQrCode(pfx, passphrase, token, cob.loc.id);
+
     return {
-      txid,
-      qrCode: null,
-      copiaCola: `00020101021226870014BR.GOV.BCB.PIX2567${txid}5204000053039865405${String(amountCents).padStart(2, "0")}5802BR5913Agenda Academica6008SAOPAULO62070503***6304E2CA`,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      txid: cob.txid,
+      qrCode: imagemQrcode,
+      copiaCola: qrcode,
+      expiresAt: new Date(Date.now() + PIX_EXPIRATION_SECONDS * 1000).toISOString(),
     };
   },
 
