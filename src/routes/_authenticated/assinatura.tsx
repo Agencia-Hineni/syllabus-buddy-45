@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Loader2, Copy, QrCode } from "lucide-react";
 import { membershipQuery, paymentsQuery, subscriptionQuery } from "@/lib/queries";
+import { generatePixCharge } from "@/lib/payments/pix.functions";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatMoney } from "@/lib/format";
