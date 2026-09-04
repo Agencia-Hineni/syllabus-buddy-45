@@ -1,3 +1,4 @@
+import https from "node:https";
 import type { PaymentProvider, PixCharge, WebhookPayload } from "./types";
 import { PaymentProviderError } from "./types";
 
@@ -7,13 +8,70 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function apiHost(): string {
+  return process.env["EFI_SANDBOX"] === "true"
+    ? "pix-h.api.efipay.com.br"
+    : "pix.api.efipay.com.br";
+}
+
+function httpsJson<T>(options: https.RequestOptions, body?: unknown): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let raw = "";
+      res.on("data", (chunk) => (raw += chunk));
+      res.on("end", () => {
+        try {
+          const parsed = raw ? JSON.parse(raw) : {};
+          if ((res.statusCode ?? 500) >= 400) {
+            reject(new Error(`Efí ${options.method} ${options.path} → ${res.statusCode}: ${raw}`));
+            return;
+          }
+          resolve(parsed as T);
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      });
+    });
+    req.on("error", reject);
+    if (body !== undefined) req.write(JSON.stringify(body));
+    req.end();
+  });
+}
+
+async function getAccessToken(pfx: Buffer, passphrase: string | undefined): Promise<string> {
+  const clientId = requireEnv("EFI_CLIENT_ID");
+  const clientSecret = requireEnv("EFI_CLIENT_SECRET");
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const res = await httpsJson<{ access_token: string }>(
+    {
+      host: apiHost(),
+      path: "/oauth/token",
+      method: "POST",
+      pfx,
+      passphrase,
+      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
+    },
+    { grant_type: "client_credentials" },
+  );
+  return res.access_token;
+}
+
+const EFI_STATUS_MAP: Record<string, WebhookPayload["status"]> = {
+  CONCLUIDA: "paid",
+  REMOVIDA_PELO_USUARIO_RECEBEDOR: "canceled",
+  REMOVIDA_PELO_PSP: "canceled",
+  ATIVA: "pending",
+};
+
 /**
  * Efí / Gerencianet provider for Brazilian Pix.
  *
- * This provider reads credentials from environment variables. It is intentionally
- * a thin abstraction: the real Efí OAuth2 + mTLS flow happens behind the scenes.
- * To make it production-ready, replace the stub methods below with authenticated
- * calls to Efí's API using client_id, client_secret and the TLS certificate.
+ * `fetchChargeStatus` makes a real, authenticated call (OAuth2 + mTLS) to
+ * Efí's API — it's the source of truth the webhook re-checks against before
+ * trusting any "paid" status. `createPixCharge` is still a stub: it never
+ * creates a real charge on Efí's side, so there is nothing yet for
+ * `fetchChargeStatus` to find until it's wired up the same way (POST
+ * /v2/cob/:txid + GET /v2/loc/:id/qrcode).
  */
 export const efiProvider: PaymentProvider = {
   name: "efi",
@@ -66,5 +124,23 @@ export const efiProvider: PaymentProvider = {
       paidAt,
       raw: record,
     };
+  },
+
+  async fetchChargeStatus(providerChargeId) {
+    const certBase64 = requireEnv("EFI_CERTIFICATE_BASE64");
+    const pfx = Buffer.from(certBase64, "base64");
+    const passphrase = process.env["EFI_CERT_PASSPHRASE"] || undefined;
+
+    const token = await getAccessToken(pfx, passphrase);
+    const cob = await httpsJson<{ status: string }>({
+      host: apiHost(),
+      path: `/v2/cob/${providerChargeId}`,
+      method: "GET",
+      pfx,
+      passphrase,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    return EFI_STATUS_MAP[cob.status] ?? "pending";
   },
 };

@@ -23,11 +23,25 @@ export interface PaymentProvider {
     amountCents: number;
     description: string;
   }): Promise<PixCharge>;
-  parseWebhook(body: unknown, secret: string, headers: Headers): Promise<WebhookPayload> | WebhookPayload | null;
+  parseWebhook(
+    body: unknown,
+    secret: string,
+    headers: Headers,
+  ): Promise<WebhookPayload> | WebhookPayload | null;
+  /**
+   * Reconsulta a cobrança diretamente na API do provedor. O status vindo do
+   * corpo do webhook nunca deve ser aplicado sozinho — ele só diz "algo
+   * mudou, vá conferir"; esta chamada é a fonte da verdade antes de liberar
+   * o acesso do aluno.
+   */
+  fetchChargeStatus(providerChargeId: string): Promise<WebhookPayload["status"]>;
 }
 
 export class PaymentProviderError extends Error {
-  constructor(message: string, public readonly code: string) {
+  constructor(
+    message: string,
+    public readonly code: string,
+  ) {
     super(message);
     this.name = "PaymentProviderError";
   }

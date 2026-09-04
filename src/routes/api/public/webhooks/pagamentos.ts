@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { parseWebhookPayload } from "@/lib/payments/payment-service";
+import { fetchChargeStatus, parseWebhookPayload } from "@/lib/payments/payment-service";
 import { PaymentProviderError } from "@/lib/payments/types";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -42,12 +42,14 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
           return new Response("Already processed", { status: 200 });
         }
 
-        const { error: insertEventError } = await supabaseAdmin.from("payment_webhook_events").insert({
-          provider,
-          event_id: payload.eventId,
-          payload: payload.raw as Json,
-          processed_at: new Date().toISOString(),
-        });
+        const { error: insertEventError } = await supabaseAdmin
+          .from("payment_webhook_events")
+          .insert({
+            provider,
+            event_id: payload.eventId,
+            payload: payload.raw as Json,
+            processed_at: new Date().toISOString(),
+          });
 
         if (insertEventError) {
           console.error("Failed to store webhook event", insertEventError);
@@ -66,12 +68,25 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
           return new Response("Payment not found", { status: 404 });
         }
 
+        // The webhook body is only a signal to go check — never the source of
+        // truth for money-affecting state. Re-query the provider directly
+        // before applying any status change.
+        let verifiedStatus;
+        try {
+          verifiedStatus = await fetchChargeStatus(provider, payload.providerChargeId);
+        } catch (error) {
+          console.error("Failed to re-verify charge with provider", error);
+          return new Response("Could not verify charge with provider", { status: 502 });
+        }
+
+        const alreadySettled = payment.status === "paid";
+
         // Update payment status.
         const { error: paymentError } = await supabaseAdmin
           .from("payments")
           .update({
-            status: payload.status,
-            paid_at: payload.paidAt ?? null,
+            status: verifiedStatus,
+            paid_at: verifiedStatus === "paid" ? new Date().toISOString() : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", payment.id);
@@ -82,7 +97,7 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
         }
 
         // On confirmation, extend subscription and unblock the user.
-        if (payload.status === "paid" && payment.subscription_id) {
+        if (verifiedStatus === "paid" && payment.subscription_id && !alreadySettled) {
           const { data: subscription } = await supabaseAdmin
             .from("subscriptions")
             .select("id, current_period_end, status")
