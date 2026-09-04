@@ -93,11 +93,59 @@ function Assinatura() {
               : "Sua assinatura ainda não foi iniciada."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          O pagamento por Pix e cartão será liberado em breve. Assim que o pagamento for confirmado, o
-          acesso é renovado automaticamente.
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            Pague por Pix e o acesso é renovado automaticamente assim que o provedor confirmar o
+            pagamento.
+          </p>
+          <Button
+            onClick={() => pixMutation.mutate()}
+            disabled={pixMutation.isPending || !subscription?.id}
+          >
+            {pixMutation.isPending ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <QrCode className="mr-2 size-4" />
+            )}
+            Gerar cobrança Pix de {formatMoney(price)}
+          </Button>
+
+          {pix && (
+            <div className="space-y-3 rounded-lg border bg-secondary/40 p-4">
+              {pix.qrCode && (
+                <img
+                  src={pix.qrCode}
+                  alt="QR Code do Pix para pagamento da mensalidade"
+                  className="size-44 rounded-md bg-background p-2"
+                />
+              )}
+              {pix.copiaCola && (
+                <div className="space-y-2">
+                  <p className="text-xs">Código copia e cola</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded-md border bg-background px-3 py-2 text-xs">
+                      {pix.copiaCola}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Copiar código Pix"
+                      onClick={() => {
+                        navigator.clipboard.writeText(pix.copiaCola ?? "");
+                        toast.success("Código copiado.");
+                      }}
+                    >
+                      <Copy className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {pix.expiresAt && <p className="text-xs">Válido até {formatDate(pix.expiresAt)}</p>}
+            </div>
+          )}
         </CardContent>
       </Card>
+
 
       <section>
         <h2 className="mb-3 text-lg">Histórico de pagamentos</h2>
