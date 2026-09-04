@@ -44,8 +44,8 @@ export const efiProvider: PaymentProvider = {
     if (!raw || typeof raw !== "object") return null;
 
     const record = raw as Record<string, unknown>;
-    const eventId = String(record.id ?? Date.now());
-    const providerChargeId = String(record.txid ?? "");
+    const eventId = String(record["id"] ?? Date.now());
+    const providerChargeId = String(record["txid"] ?? "");
     const statusMap: Record<string, WebhookPayload["status"]> = {
       RECEBIDO: "paid",
       ATRASADO: "expired",
@@ -54,8 +54,8 @@ export const efiProvider: PaymentProvider = {
       EM_ABERTO: "pending",
     };
 
-    const status = statusMap[String(record.status ?? "EM_ABERTO")] ?? "pending";
-    const amountCents = Math.round(Number(record.valor ?? 0) * 100);
+    const status = statusMap[String(record["status"] ?? "EM_ABERTO")] ?? "pending";
+    const amountCents = Math.round(Number(record["valor"] ?? 0) * 100);
     const paidAt: string | undefined = status === "paid" ? new Date().toISOString() : undefined;
 
     return {

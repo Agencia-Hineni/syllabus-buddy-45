@@ -3,7 +3,6 @@ export interface PixCharge {
   qrCode: string | null;
   copiaCola: string | null;
   expiresAt: string;
-  raw?: unknown;
 }
 
 export interface WebhookPayload {

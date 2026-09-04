@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
         let payload;
         try {
           const body = await request.json();
-          payload = parseWebhookPayload(provider, body, secret, request.headers);
+          payload = await parseWebhookPayload(provider, body, secret, request.headers);
         } catch (error) {
           if (error instanceof PaymentProviderError) {
             return new Response(error.message, { status: 401 });

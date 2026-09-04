@@ -286,13 +286,14 @@ function Gestao() {
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              saveSubject.mutate({
-                id: subjectDialog?.id,
+              const values: Partial<Subject> = {
                 name: String(fd.get("name")),
                 professor: String(fd.get("professor")),
                 schedule: String(fd.get("schedule")),
                 color: String(fd.get("color")),
-              });
+              };
+              if (subjectDialog?.id) values.id = subjectDialog.id;
+              saveSubject.mutate(values);
             }}
           >
             <div className="space-y-2">
@@ -333,8 +334,7 @@ function Gestao() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const weightRaw = String(fd.get("weight") ?? "");
-              saveAssignment.mutate({
-                id: assignmentDialog?.id,
+              const values: Partial<Assignment> = {
                 subject_id: String(fd.get("subject_id")),
                 title: String(fd.get("title")),
                 type: String(fd.get("type")) as AssignmentType,
@@ -342,7 +342,9 @@ function Gestao() {
                 due_at: String(fd.get("due_at")),
                 weight: weightRaw ? Number(weightRaw) : null,
                 link_url: String(fd.get("link_url")) || null,
-              });
+              };
+              if (assignmentDialog?.id) values.id = assignmentDialog.id;
+              saveAssignment.mutate(values);
             }}
           >
             <div className="space-y-2">
