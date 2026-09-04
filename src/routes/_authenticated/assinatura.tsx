@@ -38,8 +38,33 @@ function Assinatura() {
   const { data: membership } = useQuery(membershipQuery());
   const { data: subscription } = useQuery(subscriptionQuery());
   const { data: payments } = useQuery(paymentsQuery());
+  const queryClient = useQueryClient();
+  const createPix = useServerFn(generatePixCharge);
+  const [pix, setPix] = useState<{ qrCode: string; copiaCola: string; expiresAt: string } | null>(null);
 
   const price = membership?.classes?.monthly_price_cents ?? 0;
+
+  const pixMutation = useMutation({
+    mutationFn: async () => {
+      if (!subscription?.id) throw new Error("Sua assinatura ainda não foi criada.");
+      return createPix({
+        data: {
+          subscriptionId: subscription.id,
+          amountCents: price,
+          description: "Mensalidade da Agenda Acadêmica",
+        },
+      });
+    },
+    onSuccess: (charge) => {
+      setPix({ qrCode: charge.qrCode, copiaCola: charge.copiaCola, expiresAt: charge.expiresAt });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      toast.success("Cobrança Pix gerada.");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Não foi possível gerar a cobrança Pix.");
+    },
+  });
+
 
   return (
     <div className="space-y-6">
