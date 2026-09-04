@@ -20,34 +20,28 @@ export const generatePixCharge = createServerFn({ method: "POST" })
     if (subError) throw new Error(subError.message);
     if (!subscription) throw new Error("Subscription not found");
 
-    try {
-      const charge = await createPixCharge({
-        userId,
-        classId: subscription.class_id,
-        subscriptionId: subscription.id,
-        amountCents: data.amountCents,
-        description: data.description,
-      });
+    const charge = await createPixCharge({
+      userId,
+      classId: subscription.class_id,
+      subscriptionId: subscription.id,
+      amountCents: data.amountCents,
+      description: data.description,
+    });
 
-      const { error: paymentError } = await supabase.from("payments").insert({
-        user_id: userId,
-        class_id: subscription.class_id,
-        subscription_id: subscription.id,
-        provider: "efi",
-        provider_charge_id: charge.txid,
-        amount_cents: data.amountCents,
-        status: "pending",
-        pix_qr_code: charge.qrCode,
-        pix_copia_e_cola: charge.copiaCola,
-        expires_at: charge.expiresAt,
-      });
+    const { error: paymentError } = await supabase.from("payments").insert({
+      user_id: userId,
+      class_id: subscription.class_id,
+      subscription_id: subscription.id,
+      provider: "efi",
+      method: "pix",
+      provider_charge_id: charge.txid,
+      amount_cents: data.amountCents,
+      status: "pending",
+      pix_qr_code: charge.qrCode,
+      pix_copia_e_cola: charge.copiaCola,
+      expires_at: charge.expiresAt,
+    });
 
-      if (paymentError) throw new Error(paymentError.message);
-      return charge;
-    } catch (error) {
-      if (error instanceof PaymentProviderError && error.code === "missing_credentials") {
-        return { configured: false, message: error.message } as const;
-      }
-      throw error;
-    }
+    if (paymentError) throw new Error(paymentError.message);
+    return charge;
   });

@@ -11,8 +11,8 @@ export interface WebhookPayload {
   status: "pending" | "paid" | "cancelled" | "expired" | "refunded";
   providerChargeId: string;
   amountCents: number;
-  paidAt?: string;
-  raw: unknown;
+  paidAt?: string | undefined;
+  raw: Record<string, unknown> | null;
 }
 
 export interface PaymentProvider {

@@ -43,8 +43,9 @@ export const efiProvider: PaymentProvider = {
     const raw = typeof body === "string" ? JSON.parse(body) : body;
     if (!raw || typeof raw !== "object") return null;
 
-    const eventId = String((raw as { id?: unknown }).id ?? Date.now());
-    const providerChargeId = String((raw as { txid?: unknown }).txid ?? "");
+    const record = raw as Record<string, unknown>;
+    const eventId = String(record.id ?? Date.now());
+    const providerChargeId = String(record.txid ?? "");
     const statusMap: Record<string, WebhookPayload["status"]> = {
       RECEBIDO: "paid",
       ATRASADO: "expired",
@@ -53,9 +54,9 @@ export const efiProvider: PaymentProvider = {
       EM_ABERTO: "pending",
     };
 
-    const status = statusMap[String((raw as { status?: unknown }).status ?? "EM_ABERTO")] ?? "pending";
-    const amountCents = Number((raw as { valor?: unknown }).valor ?? 0) * 100;
-    const paidAt = status === "paid" ? new Date().toISOString() : undefined;
+    const status = statusMap[String(record.status ?? "EM_ABERTO")] ?? "pending";
+    const amountCents = Math.round(Number(record.valor ?? 0) * 100);
+    const paidAt: string | undefined = status === "paid" ? new Date().toISOString() : undefined;
 
     return {
       eventId,
@@ -63,7 +64,7 @@ export const efiProvider: PaymentProvider = {
       providerChargeId,
       amountCents,
       paidAt,
-      raw,
+      raw: record,
     };
   },
 };
