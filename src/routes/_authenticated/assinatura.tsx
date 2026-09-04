@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Loader2, Copy, QrCode } from "lucide-react";
 import { membershipQuery, paymentsQuery, subscriptionQuery } from "@/lib/queries";
+import { generatePixCharge } from "@/lib/payments/pix.functions";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatMoney } from "@/lib/format";
@@ -32,8 +38,37 @@ function Assinatura() {
   const { data: membership } = useQuery(membershipQuery());
   const { data: subscription } = useQuery(subscriptionQuery());
   const { data: payments } = useQuery(paymentsQuery());
+  const queryClient = useQueryClient();
+  const createPix = useServerFn(generatePixCharge);
+  const [pix, setPix] = useState<{
+    qrCode: string | null;
+    copiaCola: string | null;
+    expiresAt: string | null;
+  } | null>(null);
 
   const price = membership?.classes?.monthly_price_cents ?? 0;
+
+  const pixMutation = useMutation({
+    mutationFn: async () => {
+      if (!subscription?.id) throw new Error("Sua assinatura ainda não foi criada.");
+      return createPix({
+        data: {
+          subscriptionId: subscription.id,
+          amountCents: price,
+          description: "Mensalidade da Agenda Acadêmica",
+        },
+      });
+    },
+    onSuccess: (charge) => {
+      setPix({ qrCode: charge.qrCode, copiaCola: charge.copiaCola, expiresAt: charge.expiresAt });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      toast.success("Cobrança Pix gerada.");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Não foi possível gerar a cobrança Pix.");
+    },
+  });
+
 
   return (
     <div className="space-y-6">
@@ -58,11 +93,59 @@ function Assinatura() {
               : "Sua assinatura ainda não foi iniciada."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          O pagamento por Pix e cartão será liberado em breve. Assim que o pagamento for confirmado, o
-          acesso é renovado automaticamente.
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            Pague por Pix e o acesso é renovado automaticamente assim que o provedor confirmar o
+            pagamento.
+          </p>
+          <Button
+            onClick={() => pixMutation.mutate()}
+            disabled={pixMutation.isPending || !subscription?.id}
+          >
+            {pixMutation.isPending ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <QrCode className="mr-2 size-4" />
+            )}
+            Gerar cobrança Pix de {formatMoney(price)}
+          </Button>
+
+          {pix && (
+            <div className="space-y-3 rounded-lg border bg-secondary/40 p-4">
+              {pix.qrCode && (
+                <img
+                  src={pix.qrCode}
+                  alt="QR Code do Pix para pagamento da mensalidade"
+                  className="size-44 rounded-md bg-background p-2"
+                />
+              )}
+              {pix.copiaCola && (
+                <div className="space-y-2">
+                  <p className="text-xs">Código copia e cola</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded-md border bg-background px-3 py-2 text-xs">
+                      {pix.copiaCola}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Copiar código Pix"
+                      onClick={() => {
+                        navigator.clipboard.writeText(pix.copiaCola ?? "");
+                        toast.success("Código copiado.");
+                      }}
+                    >
+                      <Copy className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {pix.expiresAt && <p className="text-xs">Válido até {formatDate(pix.expiresAt)}</p>}
+            </div>
+          )}
         </CardContent>
       </Card>
+
 
       <section>
         <h2 className="mb-3 text-lg">Histórico de pagamentos</h2>
