@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqualStr } from "@/lib/security.server";
 
 /**
  * Verificação diária de inadimplência: assinaturas vencidas entram em
  * carência e, depois, são bloqueadas — ver src/lib/notifications/billing.server.ts.
- * Protegido pelo mesmo segredo compartilhado usado em /api/cron/lembretes.
+ * Protegido pelo mesmo segredo compartilhado usado em /api/cron/lembretes,
+ * aceito só via header `x-cron-secret` (nunca via query string).
  */
 export const Route = createFileRoute("/api/cron/assinaturas")({
   server: {
@@ -13,9 +15,8 @@ export const Route = createFileRoute("/api/cron/assinaturas")({
         if (!secret) {
           return new Response("Cron não configurado (defina CRON_SECRET)", { status: 501 });
         }
-        const url = new URL(request.url);
-        const provided = request.headers.get("x-cron-secret") ?? url.searchParams.get("secret");
-        if (provided !== secret) {
+        const provided = request.headers.get("x-cron-secret");
+        if (!provided || !timingSafeEqualStr(provided, secret)) {
           return new Response("Unauthorized", { status: 401 });
         }
 

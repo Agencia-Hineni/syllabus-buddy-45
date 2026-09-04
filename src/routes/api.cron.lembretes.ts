@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqualStr } from "@/lib/security.server";
 
 /**
  * Disparo dos lembretes por e-mail. Feito para ser chamado por um agendador
  * externo (cron job do provedor de hospedagem, GitHub Actions, ou pg_cron
  * batendo em HTTP) — não há agendador embutido neste servidor.
  *
- * Protegido por segredo compartilhado (header `x-cron-secret` ou
- * `?secret=`), configurado em CRON_SECRET. Sem essa variável configurada,
- * o endpoint recusa toda chamada.
+ * Protegido por segredo compartilhado no header `x-cron-secret`
+ * (configurado em CRON_SECRET). Sem essa variável configurada, o endpoint
+ * recusa toda chamada. O segredo só é aceito via header — nunca via query
+ * string, que fica gravada em logs de acesso e histórico do navegador.
  *
  * Uso:
  *   POST /api/cron/lembretes                 → lembretes de prazo (7/3/1 dia)
@@ -21,9 +23,8 @@ export const Route = createFileRoute("/api/cron/lembretes")({
         if (!secret) {
           return new Response("Cron não configurado (defina CRON_SECRET)", { status: 501 });
         }
-        const url = new URL(request.url);
-        const provided = request.headers.get("x-cron-secret") ?? url.searchParams.get("secret");
-        if (provided !== secret) {
+        const provided = request.headers.get("x-cron-secret");
+        if (!provided || !timingSafeEqualStr(provided, secret)) {
           return new Response("Unauthorized", { status: 401 });
         }
 
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/api/cron/lembretes")({
           await import("@/lib/notifications/reminders.server");
 
         try {
+          const url = new URL(request.url);
           const job = url.searchParams.get("job");
           const result =
             job === "weekly-digest" ? await runWeeklyDigest() : await runDueDateReminders();

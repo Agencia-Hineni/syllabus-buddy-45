@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { timingSafeEqualStr } from "@/lib/security.server";
 
 /**
  * Concede o papel global "admin" ao usuário autenticado que fizer a
@@ -6,16 +7,13 @@ import { createFileRoute } from "@tanstack/react-router";
  * plataforma, já que por design (RLS) ninguém pode se auto-promover via
  * INSERT direto em `user_roles`.
  *
- * Protegido por ADMIN_BOOTSTRAP_SECRET (defina, use uma vez, depois pode
- * remover a variável — endpoints já promovidos continuam admin).
+ * De uso único por construção: se já existir qualquer admin, o endpoint
+ * se recusa a promover mais alguém (mesmo com o segredo correto) — depois
+ * de criado o primeiro admin, novos administradores são promovidos pelo
+ * próprio painel Admin, não por aqui.
  *
- * Chamada esperada (com uma sessão válida no navegador):
- *   fetch('/api/admin/bootstrap', {
- *     method: 'POST',
- *     headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
- *     body: JSON.stringify({ secret: '...' }),
- *   })
- * Ou pela página /bootstrap-admin já logado.
+ * Protegido por ADMIN_BOOTSTRAP_SECRET (defina, use uma vez, depois pode
+ * remover a variável — o primeiro admin promovido continua admin).
  */
 export const Route = createFileRoute("/api/admin/bootstrap")({
   server: {
@@ -37,11 +35,30 @@ export const Route = createFileRoute("/api/admin/bootstrap")({
         const body = await request.json().catch(() => null);
         const providedSecret =
           body && typeof body === "object" ? (body as { secret?: unknown }).secret : null;
-        if (typeof providedSecret !== "string" || providedSecret !== configuredSecret) {
+        if (
+          typeof providedSecret !== "string" ||
+          !timingSafeEqualStr(providedSecret, configuredSecret)
+        ) {
           return new Response("Unauthorized: segredo inválido", { status: 401 });
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        const existingAdmin = await supabaseAdmin
+          .from("user_roles")
+          .select("id")
+          .eq("role", "admin")
+          .limit(1);
+        if (existingAdmin.error) {
+          console.error("[admin bootstrap]", existingAdmin.error);
+          return new Response("Internal Error", { status: 500 });
+        }
+        if (existingAdmin.data.length > 0) {
+          return new Response(
+            "Já existe um administrador nesta plataforma. Peça para um admin existente te promover pelo painel Admin.",
+            { status: 403 },
+          );
+        }
 
         const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
         if (userError || !userData.user) {

@@ -1,4 +1,5 @@
 import https from "node:https";
+import { timingSafeEqualStr } from "@/lib/security.server";
 import {
   PaymentsNotConfiguredError,
   type ChargeStatus,
@@ -195,9 +196,14 @@ export const efiPixProvider: PaymentsProvider = {
   async verifyWebhookSignature(request: Request): Promise<boolean> {
     const expected = process.env["EFI_WEBHOOK_SECRET"];
     if (!expected) return false;
+    // Preferimos o header, mas a Efí só permite configurar uma URL de
+    // webhook (sem headers customizados) — por isso o segredo também pode
+    // vir na query string. Sem HMAC do lado da Efí, este segredo é a única
+    // defesa; trate a URL configurada como confidencial.
     const url = new URL(request.url);
-    const provided = url.searchParams.get("secret") ?? request.headers.get("x-webhook-secret");
-    return provided === expected;
+    const provided = request.headers.get("x-webhook-secret") ?? url.searchParams.get("secret");
+    if (!provided) return false;
+    return timingSafeEqualStr(provided, expected);
   },
 
   parseWebhookEvent(payload: unknown): ParsedWebhookEvent | null {
