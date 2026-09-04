@@ -187,7 +187,18 @@ export async function joinClassByInviteCode(rawCode: string): Promise<void> {
     .from("class_members")
     .insert({ class_id: classRes.data.id, user_id: uid, role: "aluno" });
   if (error) {
-    if (error.code === "23505") throw new Error("Você já faz parte desta turma.");
+    if (error.code === "23505") {
+      const existing = await supabase
+        .from("class_members")
+        .select("status")
+        .eq("class_id", classRes.data.id)
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (existing.data && existing.data.status !== "ativo") {
+        throw new Error("Você já fez parte desta turma. Peça a um líder para reativar seu acesso.");
+      }
+      throw new Error("Você já faz parte desta turma.");
+    }
     throw new Error(error.message);
   }
 }

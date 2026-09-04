@@ -34,6 +34,31 @@ export interface PaymentsProvider {
   parseWebhookEvent(payload: unknown): ParsedWebhookEvent | null;
 }
 
+export type CheckoutSessionInput = {
+  paymentId: string;
+  amountCents: number;
+  customerEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+};
+
+export type CheckoutSession = {
+  providerChargeId: string;
+  checkoutUrl: string;
+};
+
+/**
+ * Porta de cartão recorrente. Separada de `PaymentsProvider` porque cartão
+ * funciona por assinatura/checkout hospedado, não por cobrança única como o
+ * Pix — mas segue o mesmo princípio de isolamento.
+ */
+export interface CardProvider {
+  readonly name: string;
+  createCheckoutSession(input: CheckoutSessionInput): Promise<CheckoutSession>;
+  verifyWebhookSignature(request: Request, rawBody: string): Promise<boolean>;
+  parseWebhookEvent(payload: unknown): ParsedWebhookEvent | null;
+}
+
 export class PaymentsNotConfiguredError extends Error {
   constructor(provider: string, missing: string[]) {
     super(`Provedor de pagamentos "${provider}" não configurado. Faltam: ${missing.join(", ")}.`);

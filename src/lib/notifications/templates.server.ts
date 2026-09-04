@@ -65,6 +65,36 @@ export function weeklyDigestEmail(input: {
   return { subject, html };
 }
 
+export function billingDueEmail(input: {
+  studentName: string;
+  amountFormatted: string;
+  dueAtFormatted: string;
+  graceDays: number;
+}): { subject: string; html: string } {
+  const subject = "Sua mensalidade venceu";
+  const html = layout(
+    subject,
+    `<p>Oi, ${esc(input.studentName)}!</p>
+     <p>Sua mensalidade de <strong>${esc(input.amountFormatted)}</strong>, com vencimento em <strong>${esc(input.dueAtFormatted)}</strong>, ainda não foi confirmada.</p>
+     <p>Você tem <strong>${input.graceDays} dia(s)</strong> de carência antes que o acesso seja bloqueado. Regularize assim que possível na página de Assinatura.</p>`,
+  );
+  return { subject, html };
+}
+
+export function billingBlockedEmail(input: { studentName: string }): {
+  subject: string;
+  html: string;
+} {
+  const subject = "Acesso bloqueado por falta de pagamento";
+  const html = layout(
+    subject,
+    `<p>Oi, ${esc(input.studentName)}!</p>
+     <p>Seu acesso à Agenda Acadêmica foi bloqueado por falta de pagamento da mensalidade.</p>
+     <p>Assim que o pagamento for confirmado, o acesso volta automaticamente.</p>`,
+  );
+  return { subject, html };
+}
+
 export function paymentConfirmedEmail(input: {
   studentName: string;
   amountFormatted: string;

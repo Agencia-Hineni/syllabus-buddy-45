@@ -1,27 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PaymentsNotConfiguredError } from "@/lib/payments/types";
 import type { Json } from "@/integrations/supabase/types";
 
 /**
- * Webhook público de confirmação de pagamento Pix (Efí).
- * Idempotente: cada evento é gravado uma única vez em `payment_webhook_events`
- * (chave única `(provider, event_id)`); reentregas do provedor são
- * reconhecidas com 200 sem reprocessar.
+ * Webhook público de confirmação de pagamento por cartão (Stripe).
+ * Mesmo padrão do webhook Pix: evento gravado uma única vez em
+ * `payment_webhook_events` (idempotente), status "pago" só é aplicado
+ * para o evento `checkout.session.completed` com `payment_status: paid`.
  *
- * O status "pago" nunca é aceito apenas pelo corpo do webhook — sempre se
- * reconsulta a cobrança na API do provedor antes de liberar o acesso.
+ * Renovações mensais seguintes chegam como `invoice.paid` referenciando a
+ * assinatura da Stripe, não o `client_reference_id` do checkout original —
+ * esse caminho ainda não está implementado (ver nota no final do arquivo).
  */
-export const Route = createFileRoute("/api/webhooks/pagamentos")({
+export const Route = createFileRoute("/api/webhooks/stripe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { pixProvider } = await import("@/lib/payments/index.server");
+        const { cardProvider } = await import("@/lib/payments/index.server");
         const { settlePayment } = await import("@/lib/payments/settlement.server");
 
         const rawBody = await request.text();
 
-        const verified = await pixProvider.verifyWebhookSignature(request, rawBody);
+        const verified = await cardProvider.verifyWebhookSignature(request, rawBody);
         if (!verified) {
           return new Response("Unauthorized", { status: 401 });
         }
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/api/webhooks/pagamentos")({
         } catch {
           return new Response("Bad Request", { status: 400 });
         }
-        const event = payload ? pixProvider.parseWebhookEvent(payload) : null;
+        const event = payload ? cardProvider.parseWebhookEvent(payload) : null;
         if (!event) {
           return new Response("Bad Request", { status: 400 });
         }
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/api/webhooks/pagamentos")({
         const inserted = await supabaseAdmin
           .from("payment_webhook_events")
           .insert({
-            provider: pixProvider.name,
+            provider: cardProvider.name,
             event_id: event.eventId,
             event_type: event.eventType,
             provider_charge_id: event.providerChargeId,
@@ -50,20 +50,21 @@ export const Route = createFileRoute("/api/webhooks/pagamentos")({
           .single();
 
         if (inserted.error) {
-          // 23505 = unique_violation: já recebemos e (provavelmente) processamos este evento.
           if (inserted.error.code === "23505") {
             return new Response("OK", { status: 200 });
           }
-          console.error("[webhook pagamentos] falha ao gravar evento", inserted.error);
+          console.error("[webhook stripe] falha ao gravar evento", inserted.error);
           return new Response("Internal Error", { status: 500 });
         }
 
         try {
-          if (!event.providerChargeId) throw new Error("Evento sem identificador de cobrança");
+          const paidEvent =
+            event.eventType === "checkout.session.completed" &&
+            (payload as { data?: { object?: { payment_status?: string } } })?.data?.object
+              ?.payment_status === "paid";
 
-          const status = await pixProvider.fetchChargeStatus(event.providerChargeId);
-          if (status === "paid") {
-            await settlePayment(supabaseAdmin, pixProvider.name, event.providerChargeId);
+          if (paidEvent && event.providerChargeId) {
+            await settlePayment(supabaseAdmin, cardProvider.name, event.providerChargeId);
           }
 
           await supabaseAdmin
@@ -71,20 +72,14 @@ export const Route = createFileRoute("/api/webhooks/pagamentos")({
             .update({ processed_at: new Date().toISOString() })
             .eq("id", inserted.data.id);
         } catch (err) {
-          const message =
-            err instanceof PaymentsNotConfiguredError
-              ? `${err.message} Evento recebido e registrado, mas não pôde ser confirmado automaticamente.`
-              : err instanceof Error
-                ? err.message
-                : String(err);
-          console.error("[webhook pagamentos]", message);
+          const message = err instanceof Error ? err.message : String(err);
+          console.error("[webhook stripe]", message);
           await supabaseAdmin
             .from("payment_webhook_events")
             .update({ processing_error: message })
             .eq("id", inserted.data.id);
         }
 
-        // Sempre 200: já persistimos o evento, então o provedor não precisa reentregar.
         return new Response("OK", { status: 200 });
       },
     },

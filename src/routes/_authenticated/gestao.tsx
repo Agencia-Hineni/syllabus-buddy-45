@@ -94,7 +94,9 @@ function Gestao() {
     },
   });
 
-  const canManage = isAdmin || membership?.role === "lider" || membership?.role === "vice_lider";
+  const canManage =
+    Boolean(classId) &&
+    (isAdmin || membership?.role === "lider" || membership?.role === "vice_lider");
 
   const regenerateInvite = useMutation({
     mutationFn: async () => {
@@ -117,6 +119,33 @@ function Gestao() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["membership"] });
       toast.success("Novo código de convite gerado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const setMemberStatus = useMutation({
+    mutationFn: async ({
+      memberId,
+      status,
+      name,
+    }: {
+      memberId: string;
+      status: "ativo" | "removido";
+      name: string;
+    }) => {
+      const { error } = await supabase.from("class_members").update({ status }).eq("id", memberId);
+      if (error) throw new Error(error.message);
+      await logAudit({
+        classId: classId ?? null,
+        entityType: "class_member",
+        entityId: memberId,
+        action: "update",
+        summary: status === "ativo" ? `Reativou ${name} na turma` : `Removeu ${name} da turma`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Membro atualizado");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -248,7 +277,11 @@ function Gestao() {
     return (
       <EmptyState
         title="Acesso restrito"
-        description="Apenas líder, vice-líder e administrador podem gerenciar a turma."
+        description={
+          classId
+            ? "Apenas líder, vice-líder e administrador podem gerenciar a turma."
+            : "Você precisa estar em uma turma para gerenciá-la."
+        }
       />
     );
   }
@@ -410,6 +443,38 @@ function Gestao() {
                     >
                       {m.subscription?.status ?? "sem assinatura"}
                     </Badge>
+                    <Badge variant={m.status === "ativo" ? "secondary" : "outline"}>
+                      {m.status}
+                    </Badge>
+                    {m.status === "ativo" ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setMemberStatus.mutate({
+                            memberId: m.id,
+                            status: "removido",
+                            name: m.profile?.full_name ?? m.profile?.email ?? "aluno",
+                          })
+                        }
+                      >
+                        Remover
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setMemberStatus.mutate({
+                            memberId: m.id,
+                            status: "ativo",
+                            name: m.profile?.full_name ?? m.profile?.email ?? "aluno",
+                          })
+                        }
+                      >
+                        Reativar
+                      </Button>
+                    )}
                   </div>
                 </li>
               ))}

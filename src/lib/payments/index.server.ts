@@ -1,5 +1,6 @@
 import { efiPixProvider } from "./efi.server";
-import type { PaymentsProvider } from "./types";
+import { stripeCardProvider } from "./stripe.server";
+import type { CardProvider, PaymentsProvider } from "./types";
 
 export * from "./types";
 
@@ -9,3 +10,4 @@ export * from "./types";
  * atrás desta porta, como pede a arquitetura do projeto.
  */
 export const pixProvider: PaymentsProvider = efiPixProvider;
+export const cardProvider: CardProvider = stripeCardProvider;

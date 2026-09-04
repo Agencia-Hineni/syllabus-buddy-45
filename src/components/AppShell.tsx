@@ -11,12 +11,14 @@ import {
   BellRing,
   LogOut,
   Menu,
+  Lock,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { isAdminQuery, membershipQuery } from "@/lib/queries";
+import { isAdminQuery, membershipQuery, subscriptionQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/EmptyState";
 
 const baseNav = [
   { to: "/painel", label: "Painel", icon: LayoutDashboard },
@@ -34,8 +36,20 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const { data: membership } = useQuery(membershipQuery());
   const { data: isAdmin } = useQuery(isAdminQuery());
+  const { data: subscription } = useQuery(subscriptionQuery());
 
-  const canManage = membership?.role === "lider" || membership?.role === "vice_lider" || isAdmin;
+  const canManage =
+    Boolean(membership) &&
+    (membership?.role === "lider" || membership?.role === "vice_lider" || isAdmin);
+  const isFreeClass = (membership?.classes?.monthly_price_cents ?? 0) === 0;
+  const allowedWhileBlocked =
+    pathname.startsWith("/assinatura") || pathname.startsWith("/preferencias");
+  const isBlocked =
+    membership?.role === "aluno" &&
+    !isAdmin &&
+    !isFreeClass &&
+    subscription?.status === "blocked" &&
+    !allowedWhileBlocked;
 
   const items = [
     ...baseNav,
@@ -113,7 +127,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
           <span className="font-display font-semibold">Agenda</span>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8 md:py-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8 md:py-10">
+          {isBlocked ? (
+            <EmptyState
+              title="Acesso bloqueado por falta de pagamento"
+              description="Regularize sua mensalidade na página de Assinatura para voltar a ver as disciplinas e atividades da turma."
+              action={
+                <Button asChild>
+                  <Link to="/assinatura">
+                    <Lock className="mr-2 size-4" /> Ir para Assinatura
+                  </Link>
+                </Button>
+              }
+            />
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );
