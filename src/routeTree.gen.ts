@@ -20,6 +20,7 @@ import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedDisciplinasIndexRouteImport } from './routes/_authenticated/disciplinas.index'
 import { Route as AuthenticatedDisciplinasIdRouteImport } from './routes/_authenticated/disciplinas.$id'
+import { Route as ApiPublicWebhooksPagamentosRouteImport } from './routes/api/public/webhooks/pagamentos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -77,6 +78,12 @@ const AuthenticatedDisciplinasIdRoute =
     path: '/disciplinas/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicWebhooksPagamentosRoute =
+  ApiPublicWebhooksPagamentosRouteImport.update({
+    id: '/api/public/webhooks/pagamentos',
+    path: '/api/public/webhooks/pagamentos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof AuthenticatedPainelRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
   '/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesByTo {
   '/painel': typeof AuthenticatedPainelRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
   '/disciplinas': typeof AuthenticatedDisciplinasIndexRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,6 +124,7 @@ export interface FileRoutesById {
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
   '/_authenticated/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/disciplinas/$id'
     | '/disciplinas/'
+    | '/api/public/webhooks/pagamentos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/disciplinas/$id'
     | '/disciplinas'
+    | '/api/public/webhooks/pagamentos'
   id:
     | '__root__'
     | '/'
@@ -154,6 +166,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel'
     | '/_authenticated/disciplinas/$id'
     | '/_authenticated/disciplinas/'
+    | '/api/public/webhooks/pagamentos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -161,6 +174,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -242,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDisciplinasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/webhooks/pagamentos': {
+      id: '/api/public/webhooks/pagamentos'
+      path: '/api/public/webhooks/pagamentos'
+      fullPath: '/api/public/webhooks/pagamentos'
+      preLoaderRoute: typeof ApiPublicWebhooksPagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -273,6 +294,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
