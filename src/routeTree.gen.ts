@@ -18,8 +18,11 @@ import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedPreferenciasRouteImport } from './routes/_authenticated/preferencias'
 import { Route as AuthenticatedDisciplinasIndexRouteImport } from './routes/_authenticated/disciplinas.index'
 import { Route as AuthenticatedDisciplinasIdRouteImport } from './routes/_authenticated/disciplinas.$id'
+import { Route as ApiCronLembretesRouteImport } from './routes/api.cron.lembretes'
+import { Route as ApiWebhooksPagamentosRouteImport } from './routes/api.webhooks.pagamentos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,6 +68,12 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPreferenciasRoute =
+  AuthenticatedPreferenciasRouteImport.update({
+    id: '/preferencias',
+    path: '/preferencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDisciplinasIndexRoute =
   AuthenticatedDisciplinasIndexRouteImport.update({
     id: '/disciplinas/',
@@ -77,6 +86,16 @@ const AuthenticatedDisciplinasIdRoute =
     path: '/disciplinas/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiCronLembretesRoute = ApiCronLembretesRouteImport.update({
+  id: '/api/cron/lembretes',
+  path: '/api/cron/lembretes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksPagamentosRoute = ApiWebhooksPagamentosRouteImport.update({
+  id: '/api/webhooks/pagamentos',
+  path: '/api/webhooks/pagamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -87,7 +106,10 @@ export interface FileRoutesByFullPath {
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/gestao': typeof AuthenticatedGestaoRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/preferencias': typeof AuthenticatedPreferenciasRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
+  '/api/cron/lembretes': typeof ApiCronLembretesRoute
+  '/api/webhooks/pagamentos': typeof ApiWebhooksPagamentosRoute
   '/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -99,7 +121,10 @@ export interface FileRoutesByTo {
   '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/gestao': typeof AuthenticatedGestaoRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/preferencias': typeof AuthenticatedPreferenciasRoute
   '/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
+  '/api/cron/lembretes': typeof ApiCronLembretesRoute
+  '/api/webhooks/pagamentos': typeof ApiWebhooksPagamentosRoute
   '/disciplinas': typeof AuthenticatedDisciplinasIndexRoute
 }
 export interface FileRoutesById {
@@ -113,7 +138,10 @@ export interface FileRoutesById {
   '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/preferencias': typeof AuthenticatedPreferenciasRoute
   '/_authenticated/disciplinas/$id': typeof AuthenticatedDisciplinasIdRoute
+  '/api/cron/lembretes': typeof ApiCronLembretesRoute
+  '/api/webhooks/pagamentos': typeof ApiWebhooksPagamentosRoute
   '/_authenticated/disciplinas/': typeof AuthenticatedDisciplinasIndexRoute
 }
 export interface FileRouteTypes {
@@ -127,7 +155,10 @@ export interface FileRouteTypes {
     | '/assinatura'
     | '/gestao'
     | '/painel'
+    | '/preferencias'
     | '/disciplinas/$id'
+    | '/api/cron/lembretes'
+    | '/api/webhooks/pagamentos'
     | '/disciplinas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -139,7 +170,10 @@ export interface FileRouteTypes {
     | '/assinatura'
     | '/gestao'
     | '/painel'
+    | '/preferencias'
     | '/disciplinas/$id'
+    | '/api/cron/lembretes'
+    | '/api/webhooks/pagamentos'
     | '/disciplinas'
   id:
     | '__root__'
@@ -152,7 +186,10 @@ export interface FileRouteTypes {
     | '/_authenticated/assinatura'
     | '/_authenticated/gestao'
     | '/_authenticated/painel'
+    | '/_authenticated/preferencias'
     | '/_authenticated/disciplinas/$id'
+    | '/api/cron/lembretes'
+    | '/api/webhooks/pagamentos'
     | '/_authenticated/disciplinas/'
   fileRoutesById: FileRoutesById
 }
@@ -161,6 +198,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiCronLembretesRoute: typeof ApiCronLembretesRoute
+  ApiWebhooksPagamentosRoute: typeof ApiWebhooksPagamentosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -228,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/preferencias': {
+      id: '/_authenticated/preferencias'
+      path: '/preferencias'
+      fullPath: '/preferencias'
+      preLoaderRoute: typeof AuthenticatedPreferenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/disciplinas/': {
       id: '/_authenticated/disciplinas/'
       path: '/disciplinas'
@@ -242,6 +288,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDisciplinasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/cron/lembretes': {
+      id: '/api/cron/lembretes'
+      path: '/api/cron/lembretes'
+      fullPath: '/api/cron/lembretes'
+      preLoaderRoute: typeof ApiCronLembretesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/pagamentos': {
+      id: '/api/webhooks/pagamentos'
+      path: '/api/webhooks/pagamentos'
+      fullPath: '/api/webhooks/pagamentos'
+      preLoaderRoute: typeof ApiWebhooksPagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -251,6 +311,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedPreferenciasRoute: typeof AuthenticatedPreferenciasRoute
   AuthenticatedDisciplinasIdRoute: typeof AuthenticatedDisciplinasIdRoute
   AuthenticatedDisciplinasIndexRoute: typeof AuthenticatedDisciplinasIndexRoute
 }
@@ -261,6 +322,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
   AuthenticatedGestaoRoute: AuthenticatedGestaoRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedPreferenciasRoute: AuthenticatedPreferenciasRoute,
   AuthenticatedDisciplinasIdRoute: AuthenticatedDisciplinasIdRoute,
   AuthenticatedDisciplinasIndexRoute: AuthenticatedDisciplinasIndexRoute,
 }
@@ -273,6 +335,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiCronLembretesRoute: ApiCronLembretesRoute,
+  ApiWebhooksPagamentosRoute: ApiWebhooksPagamentosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

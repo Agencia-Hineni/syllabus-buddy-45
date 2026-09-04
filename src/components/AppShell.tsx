@@ -8,6 +8,7 @@ import {
   Settings2,
   ShieldCheck,
   CreditCard,
+  BellRing,
   LogOut,
   Menu,
   X,
@@ -22,6 +23,7 @@ const baseNav = [
   { to: "/disciplinas", label: "Disciplinas", icon: BookOpen },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/assinatura", label: "Assinatura", icon: CreditCard },
+  { to: "/preferencias", label: "Preferências", icon: BellRing },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

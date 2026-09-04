@@ -13,7 +13,10 @@ export const Route = createFileRoute("/reset-password")({
       { title: "Redefinir senha | Agenda Acadêmica" },
       { name: "description", content: "Defina uma nova senha para acessar a agenda da sua turma." },
       { property: "og:title", content: "Redefinir senha | Agenda Acadêmica" },
-      { property: "og:description", content: "Defina uma nova senha para acessar a agenda da sua turma." },
+      {
+        property: "og:description",
+        content: "Defina uma nova senha para acessar a agenda da sua turma.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -31,7 +34,10 @@ function ResetPassword() {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Senha atualizada.");
     navigate({ to: "/painel", replace: true });
   }

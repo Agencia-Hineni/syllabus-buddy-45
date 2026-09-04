@@ -8,6 +8,10 @@ export type ClassMember = Database["public"]["Tables"]["class_members"]["Row"];
 export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type NotificationPreferences =
+  Database["public"]["Tables"]["notification_preferences"]["Row"];
+export type Institution = Database["public"]["Tables"]["institutions"]["Row"];
+export type Course = Database["public"]["Tables"]["courses"]["Row"];
 export type AssignmentType = Database["public"]["Enums"]["assignment_type"];
 export type ClassRole = Database["public"]["Enums"]["class_role"];
 
@@ -17,7 +21,8 @@ function unwrap<T>({ data, error }: { data: T | null; error: { message: string }
 }
 
 export type Membership = ClassMember & {
-  classes: (ClassRow & { courses: { name: string; institutions: { name: string } | null } | null }) | null;
+  classes:
+    (ClassRow & { courses: { name: string; institutions: { name: string } | null } | null }) | null;
 };
 
 export const membershipQuery = () => ({
@@ -45,7 +50,11 @@ export const isAdminQuery = () => ({
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) return false;
-    const res = await supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin");
+    const res = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .eq("role", "admin");
     if (res.error) throw new Error(res.error.message);
     return (res.data ?? []).length > 0;
   },
@@ -125,6 +134,63 @@ export const paymentsQuery = () => ({
   queryFn: async (): Promise<Payment[]> =>
     unwrap(await supabase.from("payments").select("*").order("created_at", { ascending: false })),
 });
+
+export const notificationPreferencesQuery = () => ({
+  queryKey: ["notification-preferences"],
+  queryFn: async (): Promise<NotificationPreferences | null> => {
+    const res = await supabase.from("notification_preferences").select("*").maybeSingle();
+    if (res.error) throw new Error(res.error.message);
+    return res.data;
+  },
+});
+
+export async function updateNotificationPreferences(
+  patch: Partial<
+    Pick<
+      NotificationPreferences,
+      | "email_enabled"
+      | "remind_7_days"
+      | "remind_3_days"
+      | "remind_1_day"
+      | "weekly_digest"
+      | "billing_alerts"
+    >
+  >,
+): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error("Sessão expirada. Entre novamente.");
+  const { error } = await supabase
+    .from("notification_preferences")
+    .upsert({ user_id: uid, ...patch }, { onConflict: "user_id" });
+  if (error) throw new Error(error.message);
+}
+
+export async function joinClassByInviteCode(rawCode: string): Promise<void> {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) throw new Error("Informe o código de convite");
+
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error("Sessão expirada. Entre novamente.");
+
+  const classRes = await supabase
+    .from("classes")
+    .select("id, is_active")
+    .eq("invite_code", code)
+    .maybeSingle();
+  if (classRes.error) throw new Error(classRes.error.message);
+  if (!classRes.data) throw new Error("Código de convite inválido.");
+  if (!classRes.data.is_active) throw new Error("Esta turma não está mais ativa.");
+
+  const { error } = await supabase
+    .from("class_members")
+    .insert({ class_id: classRes.data.id, user_id: uid, role: "aluno" });
+  if (error) {
+    if (error.code === "23505") throw new Error("Você já faz parte desta turma.");
+    throw new Error(error.message);
+  }
+}
 
 export async function logAudit(input: {
   classId: string | null;
