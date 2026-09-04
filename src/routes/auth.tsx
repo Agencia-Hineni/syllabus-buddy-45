@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,14 @@ export const Route = createFileRoute("/auth")({
       { title: "Entrar na Agenda Acadêmica" },
       {
         name: "description",
-        content: "Acesse a agenda da sua turma: disciplinas, atividades, provas e prazos em um só lugar.",
+        content:
+          "Acesse a agenda da sua turma: disciplinas, atividades, provas e prazos em um só lugar.",
       },
       { property: "og:title", content: "Entrar na Agenda Acadêmica" },
       {
         property: "og:description",
-        content: "Acesse a agenda da sua turma: disciplinas, atividades, provas e prazos em um só lugar.",
+        content:
+          "Acesse a agenda da sua turma: disciplinas, atividades, provas e prazos em um só lugar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -41,7 +44,7 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/painel", replace: true });
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
         navigate({ to: "/painel", replace: true });
       }
@@ -69,7 +72,10 @@ function AuthPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     if (!data.session) {
       setConfirmSent(true);
       toast.success("Confira seu e-mail para confirmar a conta.");
@@ -85,11 +91,17 @@ function AuthPage() {
   }
 
   async function forgotPassword() {
-    if (!email) return toast.error("Digite seu e-mail primeiro.");
+    if (!email) {
+      toast.error("Digite seu e-mail primeiro.");
+      return;
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Enviamos um link de recuperação para seu e-mail.");
   }
 
@@ -110,8 +122,8 @@ function AuthPage() {
             {confirmSent ? (
               <div className="space-y-4 text-sm">
                 <p>
-                  Enviamos um link de confirmação para <strong>{email}</strong>. Depois de confirmar,
-                  volte aqui e faça login.
+                  Enviamos um link de confirmação para <strong>{email}</strong>. Depois de
+                  confirmar, volte aqui e faça login.
                 </p>
                 <Button variant="outline" className="w-full" onClick={() => setConfirmSent(false)}>
                   Voltar
@@ -209,7 +221,8 @@ function AuthPage() {
             {!confirmSent && (
               <>
                 <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="h-px flex-1 bg-border" /> ou <span className="h-px flex-1 bg-border" />
+                  <span className="h-px flex-1 bg-border" /> ou{" "}
+                  <span className="h-px flex-1 bg-border" />
                 </div>
                 <Button variant="outline" className="w-full" onClick={signInGoogle}>
                   Continuar com Google
