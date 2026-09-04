@@ -83,12 +83,17 @@ function AuthPage() {
   }
 
   async function signInGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-    if (error) toast.error(error.message);
+    if (result.error) {
+      toast.error(result.error.message ?? "Não foi possível entrar com o Google.");
+      return;
+    }
+    if (result.redirected) return;
+    navigate({ to: "/painel" });
   }
+
 
   async function forgotPassword() {
     if (!email) {
