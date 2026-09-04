@@ -7,7 +7,7 @@ export interface PixCharge {
 
 export interface WebhookPayload {
   eventId: string;
-  status: "pending" | "paid" | "cancelled" | "expired" | "refunded";
+  status: "pending" | "paid" | "canceled" | "expired" | "refunded";
   providerChargeId: string;
   amountCents: number;
   paidAt?: string | undefined;

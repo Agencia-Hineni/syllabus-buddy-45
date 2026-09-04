@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/public/webhooks/pagamentos")({
         const { error: insertEventError } = await supabaseAdmin.from("payment_webhook_events").insert({
           provider,
           event_id: payload.eventId,
-          payload: payload.raw,
+          payload: payload.raw as unknown,
           processed_at: new Date().toISOString(),
         });
 

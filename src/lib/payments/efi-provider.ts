@@ -49,7 +49,7 @@ export const efiProvider: PaymentProvider = {
     const statusMap: Record<string, WebhookPayload["status"]> = {
       RECEBIDO: "paid",
       ATRASADO: "expired",
-      CANCELADO: "cancelled",
+      CANCELADO: "canceled",
       DEVOLVIDO: "refunded",
       EM_ABERTO: "pending",
     };
